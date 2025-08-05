@@ -155,4 +155,9 @@ npx ts-node src/notionNextup.ts --in examples/sample-data/sample_input.csv
 
 # Test Notion API (dry run)
 npm run dev:notion -- --notion-db your-database-id --dry-run
-``` 
+
+# Run integration tests
+npx ts-node src/test-notion.ts
+
+# Run unit tests
+npm test 
