@@ -22,7 +22,8 @@ async function main(): Promise<void> {
   let outputPath = '';
   let notionDbId = '';
   let dryRun = false;
-  
+  let userFilter = 'Derious Vaughn'; // Default user
+
   // Parse command line arguments
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--in' && i + 1 < args.length) {
@@ -33,6 +34,9 @@ async function main(): Promise<void> {
       i++;
     } else if (args[i] === '--notion-db' && i + 1 < args.length) {
       notionDbId = args[i + 1];
+      i++;
+    } else if (args[i] === '--user' && i + 1 < args.length) {
+      userFilter = args[i + 1];
       i++;
     } else if (args[i] === '--dry-run') {
       dryRun = true;
@@ -67,11 +71,14 @@ async function main(): Promise<void> {
   try {
     let tasks;
     
-    if (notionDbId) {
-      // Notion API mode
-      console.log(`Loading tasks from Notion database: ${notionDbId}`);
-      tasks = await loadTasks(notionDbId);
-      console.log(`Found ${tasks.length} total tasks`);
+               if (notionDbId) {
+             // Notion API mode
+             console.log(`Loading tasks from Notion database: ${notionDbId}`);
+             if (userFilter) {
+               console.log(`Filtering for user: ${userFilter}`);
+             }
+             tasks = await loadTasks(notionDbId, userFilter);
+             console.log(`Found ${tasks.length} total tasks`);
       
       console.log('Calculating queue ranks and projected days...');
       const processedTasks = calculateQueueRank(tasks);

@@ -16,6 +16,9 @@ import { calculateQueueRank } from './core';
 async function testNotionIntegration() {
   const databaseId = process.env.NOTION_DB_ID;
   const apiKey = process.env.NOTION_API_KEY;
+  const userFilter = process.argv.includes('--user') 
+    ? process.argv[process.argv.indexOf('--user') + 1] 
+    : 'Derious Vaughn'; // Default user
 
   if (!databaseId || !apiKey) {
     console.log('❌ Missing environment variables:');
@@ -34,7 +37,10 @@ async function testNotionIntegration() {
 
     // Test 1: Load tasks
     console.log('1️⃣ Loading tasks from Notion...');
-    const tasks = await loadTasks(databaseId);
+    if (userFilter) {
+      console.log(`   Filtering for user: ${userFilter}`);
+    }
+    const tasks = await loadTasks(databaseId, userFilter);
     console.log(`   ✅ Loaded ${tasks.length} tasks`);
     
     if (tasks.length === 0) {

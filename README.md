@@ -31,6 +31,7 @@ npx ts-node src/notionNextup.ts --in input.csv --out output.csv
 - `--in`: Input CSV file path (required for CSV mode)
 - `--out`: Output CSV file path (optional, defaults to `*_ranked.csv`)
 - `--notion-db`: Notion database ID (required for Notion API mode)
+- `--user`: Filter tasks by assignee (default: "Derious Vaughn")
 - `--dry-run`: Skip writing back to Notion (for testing)
 
 ### Example
@@ -58,6 +59,12 @@ npx ts-node src/notionNextup.ts \
 # Process Notion database (write back)
 npx ts-node src/notionNextup.ts \
     --notion-db your-database-id
+
+# Process Notion database with user filter
+npx ts-node src/notionNextup.ts \
+    --notion-db your-database-id \
+    --user "Alice" \
+    --dry-run
 
 ## Required CSV Columns
 
@@ -172,8 +179,14 @@ npx ts-node src/notionNextup.ts --in examples/sample-data/sample_input.csv
 # Test Notion API (dry run)
 npm run dev:notion -- --notion-db your-database-id --dry-run
 
+# Test with user filter (default: Derious Vaughn)
+npm run dev:notion -- --notion-db your-database-id --user "Alice" --dry-run
+
 # Run integration tests
 npx ts-node src/test-notion.ts
+
+# Run integration tests with user filter
+npx ts-node src/test-notion.ts --user "Alice"
 
 # Run unit tests
 npm test 

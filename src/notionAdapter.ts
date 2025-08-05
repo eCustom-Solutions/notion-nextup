@@ -4,7 +4,7 @@ import { Task, ProcessedTask } from './types';
 /**
  * Loads tasks from Notion database
  */
-export async function loadTasks(databaseId: string): Promise<Task[]> {
+export async function loadTasks(databaseId: string, userFilter?: string): Promise<Task[]> {
   const tasks: Task[] = [];
   let cursor: string | undefined = undefined;
 
@@ -38,6 +38,11 @@ export async function loadTasks(databaseId: string): Promise<Task[]> {
 
       // Skip pages with excluded statuses
       if (['Backlogged', 'Done', 'Live in Dev', 'Ready for QA', 'Live in Staging'].includes(status)) {
+        continue;
+      }
+
+      // Filter by user if specified
+      if (userFilter && owner !== userFilter) {
         continue;
       }
 
