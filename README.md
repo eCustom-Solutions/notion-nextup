@@ -84,7 +84,11 @@ Tasks are excluded if status is:
 ```
 notion-nextup/
 ├── src/                    # Source code
-│   └── notionNextup.ts    # Main CLI script
+│   ├── notionNextup.ts    # Main CLI script
+│   ├── core.ts            # Core business logic
+│   ├── csv-parser.ts      # CSV parsing logic
+│   ├── notion-api.ts      # Notion API integration (future)
+│   └── types.ts           # Shared type definitions
 ├── examples/               # Sample data and outputs
 │   ├── sample-data/        # Input CSV files
 │   ├── output/            # Generated output files
@@ -98,6 +102,18 @@ notion-nextup/
 ├── tsconfig.json          # TypeScript configuration
 └── README.md             # This file
 ```
+
+## Architecture
+
+The project is designed with a modular architecture to support multiple data sources:
+
+- **`types.ts`**: Shared type definitions and constants
+- **`core.ts`**: Core business logic (queue ranking, eligibility, etc.)
+- **`csv-parser.ts`**: CSV-specific parsing logic
+- **`notion-api.ts`**: Future Notion API integration
+- **`notionNextup.ts`**: CLI entry point that orchestrates the modules
+
+This design allows easy swapping between CSV and Notion API data sources while keeping the core business logic unchanged.
 
 ## Development
 
