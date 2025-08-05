@@ -129,9 +129,14 @@ notion-nextup/
 │   └── cli/                # CLI entry point
 │       └── notion-nextup.ts # Main CLI script
 ├── docs/                   # Project documentation
-│   ├── testing-guide.md   # Testing instructions
-│   ├── performance-results.md # Performance optimization results
-│   ├── notion-api-research.txt # Notion API research findings
+│   ├── guides/             # How-to guides
+│   │   └── testing-guide.md # Testing instructions
+│   ├── performance/        # Performance analysis
+│   │   ├── results.md      # Performance results
+│   │   └── results.json    # Raw performance data
+│   ├── research/           # Research & planning
+│   │   ├── notion-api-research.txt # API research
+│   │   └── original-prompt.txt # Original requirements
 │   └── README.md          # Documentation index
 ├── scripts/                # Utility scripts
 │   └── setup-env.sh       # Environment setup script
