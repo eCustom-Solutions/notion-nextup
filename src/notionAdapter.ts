@@ -32,7 +32,7 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
             year: 'numeric' 
           })
         : undefined;
-      const priority = props['Priority']?.select?.name ?? '';
+      const priority = props['Priority']?.status?.name ?? '';
       const parentTaskId = props['Parent Task']?.relation?.[0]?.id;
       const parentTask = parentTaskId && parentTaskId !== null ? String(parentTaskId) : undefined;
 
