@@ -69,7 +69,7 @@ npx ts-node src/notionNextup.ts \
 ## Required CSV Columns
 
 - `Name`: Task title
-- `Task Owner`: Assignee
+- `Assignee`: Assignee
 - `Status (IT)`: Task status
 - `Estimated Days`: Effort estimate
 

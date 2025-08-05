@@ -2,7 +2,7 @@
 
 export interface Task {
   Name: string;
-  'Task Owner': string;
+  'Assignee': string;
   'Status (IT)': string;
   'Estimated Days': number;
   'Estimated Days Remaining'?: number;
@@ -23,5 +23,5 @@ export interface ProcessedTask extends Task {
 
 // Constants
 export const EXCLUDED_STATUSES = ['Backlogged', 'Done', 'Live in Dev', 'Ready for QA', 'Live in Staging'];
-export const REQUIRED_COLUMNS = ['Name', 'Task Owner', 'Status (IT)', 'Estimated Days'];
+export const REQUIRED_COLUMNS = ['Name', 'Assignee', 'Status (IT)', 'Estimated Days'];
 export const PRIORITY_MAP = { 'High': 0, 'Medium': 1, 'Low': 2, '': 3 }; 

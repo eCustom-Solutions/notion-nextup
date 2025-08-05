@@ -56,7 +56,7 @@ async function testNotionIntegration() {
     // Show sample results
     console.log('3️⃣ Sample processed tasks:');
     processedTasks.slice(0, 3).forEach((task, index) => {
-      console.log(`   ${index + 1}. ${task.Name} (${task['Task Owner']})`);
+      console.log(`   ${index + 1}. ${task.Name} (${task['Assignee']})`);
       console.log(`      Rank: ${task.queue_rank}, Projected Days: ${task['Projected Days to Completion']}`);
     });
 

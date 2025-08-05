@@ -1,4 +1,4 @@
-Name,Task Owner,Status (IT),Estimated Days,Estimated Days Remaining,Due,Priority,Parent Task,queue_rank,Projected Days to Completion
+Name,Assignee,Status (IT),Estimated Days,Estimated Days Remaining,Due,Priority,Parent Task,queue_rank,Projected Days to Completion
 Design System Setup,Alice,In Progress,5,5,,High,,1,5
 User Authentication,Alice,Not Started,3,3,,High,,2,8
 Login Form,Alice,Not Started,2,2,,High,User Authentication,3,10

@@ -1,4 +1,4 @@
-Name,Task Owner,Status (IT),Estimated Days,Estimated Days Remaining,Due,Priority,Parent Task
+Name,Assignee,Status (IT),Estimated Days,Estimated Days Remaining,Due,Priority,Parent Task
 Design System Setup,Alice,In Progress,5,3,"December 15, 2024",High,
 User Authentication,Alice,Not Started,3,3,"December 20, 2024",High,
 Database Schema,Bob,In Progress,4,2,"December 18, 2024",Medium,

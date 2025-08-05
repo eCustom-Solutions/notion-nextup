@@ -49,7 +49,7 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
       tasks.push({
         pageId: page.id,
         Name: title,
-        'Task Owner': owner, // Keep the field name consistent with our interface
+        'Assignee': owner,
         'Status (IT)': status,
         'Estimated Days': estDays,
         'Estimated Days Remaining': estRem,

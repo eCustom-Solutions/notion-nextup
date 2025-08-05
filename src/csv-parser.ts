@@ -60,7 +60,7 @@ export function parseCSV(content: string): Task[] {
 
     const task: Task = {
       Name: values[headers.indexOf('Name')] || '',
-      'Task Owner': values[headers.indexOf('Task Owner')] || '',
+      'Assignee': values[headers.indexOf('Assignee')] || '',
       'Status (IT)': values[headers.indexOf('Status (IT)')] || '',
       'Estimated Days': parseFloat(values[headers.indexOf('Estimated Days')]) || 0,
     };

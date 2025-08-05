@@ -10,7 +10,7 @@ import { Task, ProcessedTask, EXCLUDED_STATUSES, PRIORITY_MAP } from './types';
  * Determines if a task is eligible for processing
  */
 export function isEligible(task: Task): boolean {
-  return task['Task Owner'].trim() !== '' && 
+  return task['Assignee'].trim() !== '' && 
          !EXCLUDED_STATUSES.includes(task['Status (IT)']);
 }
 
@@ -70,7 +70,7 @@ export function calculateQueueRank(tasks: Task[]): ProcessedTask[] {
   for (const task of tasks) {
     if (!isEligible(task)) continue;
     
-    const owner = task['Task Owner'];
+    const owner = task['Assignee'];
     if (!tasksByOwner.has(owner)) {
       tasksByOwner.set(owner, []);
     }
@@ -138,7 +138,7 @@ export function calculateQueueRank(tasks: Task[]): ProcessedTask[] {
  */
 export function tasksToCSV(tasks: ProcessedTask[]): string {
   const headers = [
-    'Name', 'Task Owner', 'Status (IT)', 'Estimated Days', 
+          'Name', 'Assignee', 'Status (IT)', 'Estimated Days', 
     'Estimated Days Remaining', 'Due', 'Priority', 'Parent Task',
     'queue_rank', 'Projected Days to Completion'
   ];
