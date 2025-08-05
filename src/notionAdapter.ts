@@ -20,7 +20,7 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
       // Extract properties from Notion page
       const props = (page as any).properties;
       const title = props['Name']?.title?.[0]?.plain_text ?? '';
-      const ownerPeople = props['Task Owner']?.people ?? [];
+      const ownerPeople = props['Assignee']?.people ?? [];
       const owner = ownerPeople[0]?.name ?? '';
       const status = props['Status (IT)']?.status?.name ?? '';
       const estDays = props['Estimated Days']?.number ?? 0;
@@ -49,7 +49,7 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
       tasks.push({
         pageId: page.id,
         Name: title,
-        'Task Owner': owner,
+        'Task Owner': owner, // Keep the field name consistent with our interface
         'Status (IT)': status,
         'Estimated Days': estDays,
         'Estimated Days Remaining': estRem,
