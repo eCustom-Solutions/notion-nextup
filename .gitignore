@@ -11,6 +11,9 @@ build/
 # Generated output files (but keep the directory)
 output/*.csv
 
+# Project reporter utility (standalone repo)
+project-reporter/
+
 # TypeScript
 *.tsbuildinfo
 
