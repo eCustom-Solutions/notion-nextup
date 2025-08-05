@@ -8,8 +8,6 @@
     "build": "tsc",
     "dev": "ts-node --watch src/notionNextup.ts",
     "dev:notion": "ts-node src/notionNextup.ts",
-    "test": "jest",
-    "test:watch": "jest --watch",
     "setup": "./scripts/setup-env.sh",
     "debug": "ts-node src/debug-tasks.ts",
     "perf": "ts-node src/performance-test.ts",
@@ -17,10 +15,7 @@
   },
   "devDependencies": {
     "@types/dotenv": "^6.1.1",
-    "@types/jest": "^30.0.0",
     "@types/node": "^20.0.0",
-    "jest": "^30.0.5",
-    "ts-jest": "^29.4.1",
     "ts-node": "^10.9.0",
     "typescript": "^5.0.0"
   },

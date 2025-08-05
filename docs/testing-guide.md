@@ -39,13 +39,14 @@ export NOTION_DB_ID="your-database-id"
 ### **Notion Database Requirements**
 Your Notion database must have these properties:
 - `Name` (Title)
-- `Task Owner` (People)
+- `Assignee` (People)
 - `Status (IT)` (Status)
 - `Estimated Days` (Number)
-- `Estimated Days Remaining` (Number)
+- `Queue Rank` (Number - will be updated)
+- `Projected Days to Completion` (Number - will be updated)
 - `Due` (Date)
-- `Priority` (Select)
-- `Parent Task` (Relation)
+- `Priority` (Status: High/Medium/Low)
+- `Parent Task` (Text)
 
 ## 📋 **Testing Checklist**
 
@@ -69,10 +70,10 @@ Your Notion database must have these properties:
 - [ ] Error handling works
 
 ### **Phase 4: Integration Testing**
-- [ ] CSV mode still works
 - [ ] CLI arguments work correctly
 - [ ] Error messages are helpful
 - [ ] Performance is acceptable
+- [ ] User filtering works correctly
 
 ## 🚨 **Safety Measures**
 

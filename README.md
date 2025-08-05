@@ -116,12 +116,17 @@ notion-nextup/
 │   ├── user-lookup.ts     # User UUID lookup utilities
 │   ├── debug-tasks.ts     # Debug utilities for data inspection
 │   ├── performance-test.ts # Performance testing utilities
+│   ├── test-notion.ts     # Notion integration tests
+│   ├── services/          # Service modules
+│   │   └── notion_client.ts # Throttled Notion client
 │   └── types.ts           # Shared type definitions
 ├── docs/                   # Project documentation
-│   ├── init_prompt.txt    # Original project specification
+│   ├── testing-guide.md   # Testing instructions
+│   ├── performance-results.md # Performance optimization results
+│   ├── notion-api-research.txt # Notion API research findings
 │   └── README.md          # Documentation index
-├── performance-results.md  # Performance optimization results
-├── notion-api-research.txt # Notion API research findings
+├── scripts/                # Utility scripts
+│   └── setup-env.sh       # Environment setup script
 ├── package.json           # Project configuration
 ├── tsconfig.json          # TypeScript configuration
 └── README.md             # This file
