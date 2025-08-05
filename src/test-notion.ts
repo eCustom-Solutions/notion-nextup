@@ -1,5 +1,10 @@
 #!/usr/bin/env ts-node
 
+import * as dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config();
+
 /**
  * Simple integration test for Notion API functionality
  * Run with: npx ts-node src/test-notion.ts

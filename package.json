@@ -9,9 +9,11 @@
     "dev": "ts-node --watch src/notionNextup.ts",
     "dev:notion": "ts-node src/notionNextup.ts",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "setup": "./scripts/setup-env.sh"
   },
   "devDependencies": {
+    "@types/dotenv": "^6.1.1",
     "@types/jest": "^30.0.0",
     "@types/node": "^20.0.0",
     "jest": "^30.0.5",
@@ -23,6 +25,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@notionhq/client": "^4.0.1"
+    "@notionhq/client": "^4.0.1",
+    "dotenv": "^17.2.1"
   }
 }

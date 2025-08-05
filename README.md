@@ -129,6 +129,22 @@ This design allows easy swapping between CSV and Notion API data sources while k
 
 To use the Notion API functionality:
 
+### Option 1: Using .env file (Recommended)
+1. **Run the setup script**:
+   ```bash
+   npm run setup
+   ```
+
+2. **Edit .env with your values**:
+   - Get your API key from [Notion Integrations](https://www.notion.so/my-integrations)
+   - Get your database ID from your Notion database URL
+
+3. **Test with dry run**:
+   ```bash
+   npm run dev:notion -- --notion-db your-database-id --dry-run
+   ```
+
+### Option 2: Environment variables
 1. **Set up Notion API key**:
    ```bash
    export NOTION_API_KEY="your-notion-api-key"

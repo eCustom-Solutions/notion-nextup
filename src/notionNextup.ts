@@ -2,6 +2,10 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import * as dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config();
 import { loadTasksFromCSV } from './csv-parser';
 import { calculateQueueRank, tasksToCSV } from './core';
 import { ProcessedTask } from './types';
