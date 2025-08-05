@@ -9,7 +9,7 @@ dotenv.config();
 import { loadTasksFromCSV } from './csv-parser';
 import { calculateQueueRank, tasksToCSV } from './core';
 import { ProcessedTask } from './types';
-import { loadTasks, writeBack } from './notionAdapter';
+import { loadTasks, writeBack, clearQueueRanks } from './notionAdapter';
 
 /**
  * CLI entry point for Notion NextUp
@@ -71,14 +71,20 @@ async function main(): Promise<void> {
   try {
     let tasks;
     
-               if (notionDbId) {
-             // Notion API mode
-             console.log(`Loading tasks from Notion database: ${notionDbId}`);
-             if (userFilter) {
-               console.log(`Filtering for user: ${userFilter}`);
-             }
-             tasks = await loadTasks(notionDbId, userFilter);
-             console.log(`Found ${tasks.length} total tasks`);
+                   if (notionDbId) {
+      // Notion API mode
+      console.log(`Loading tasks from Notion database: ${notionDbId}`);
+      if (userFilter) {
+        console.log(`Filtering for user: ${userFilter}`);
+      }
+      
+      // Clear existing queue ranks for this user
+      if (!dryRun) {
+        await clearQueueRanks(notionDbId, userFilter);
+      }
+      
+      tasks = await loadTasks(notionDbId, userFilter);
+      console.log(`Found ${tasks.length} total tasks`);
       
       console.log('Calculating queue ranks and projected days...');
       const processedTasks = calculateQueueRank(tasks);
