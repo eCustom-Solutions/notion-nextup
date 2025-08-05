@@ -34,9 +34,19 @@ npx ts-node src/notionNextup.ts --in input.csv --out output.csv
 ### Example
 
 ```bash
+# Process sample data (outputs to examples/output/)
 npx ts-node src/notionNextup.ts \
     --in examples/sample-data/sample_input.csv \
     --out examples/output/ranked_output.csv
+
+# Process your own data (outputs to output/ by default)
+npx ts-node src/notionNextup.ts \
+    --in my_notion_export.csv
+
+# Process with custom output location
+npx ts-node src/notionNextup.ts \
+    --in my_notion_export.csv \
+    --out /path/to/custom/location/result.csv
 ```
 
 ## Required CSV Columns
@@ -79,6 +89,8 @@ notion-nextup/
 │   ├── sample-data/        # Input CSV files
 │   ├── output/            # Generated output files
 │   └── README.md          # Examples documentation
+├── output/                 # Default output directory
+│   └── README.md          # Output directory documentation
 ├── docs/                   # Project documentation
 │   ├── init_prompt.txt    # Original project specification
 │   └── README.md          # Documentation index

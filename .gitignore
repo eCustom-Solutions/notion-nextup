@@ -8,6 +8,9 @@ yarn-error.log*
 dist/
 build/
 
+# Generated output files (but keep the directory)
+output/*.csv
+
 # TypeScript
 *.tsbuildinfo
 

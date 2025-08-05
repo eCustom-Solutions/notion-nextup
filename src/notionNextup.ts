@@ -262,10 +262,23 @@ function main(): void {
   }
   
   if (!outputPath) {
-    // Default to *_ranked.csv
+    // Default to output/ directory with *_ranked.csv
     const ext = path.extname(inputPath);
     const base = path.basename(inputPath, ext);
-    outputPath = `${base}_ranked${ext}`;
+    
+    // Ensure output directory exists
+    const outputDir = 'output';
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+    
+    outputPath = path.join(outputDir, `${base}_ranked${ext}`);
+  } else {
+    // If output path is specified, ensure the directory exists
+    const outputDir = path.dirname(outputPath);
+    if (outputDir && !fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
   }
   
   try {
