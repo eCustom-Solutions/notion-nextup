@@ -10,7 +10,10 @@
     "dev:notion": "ts-node src/notionNextup.ts",
     "test": "jest",
     "test:watch": "jest --watch",
-    "setup": "./scripts/setup-env.sh"
+    "setup": "./scripts/setup-env.sh",
+    "debug": "ts-node src/debug-tasks.ts",
+    "perf": "ts-node src/performance-test.ts",
+    "test:notion": "ts-node src/test-notion.ts"
   },
   "devDependencies": {
     "@types/dotenv": "^6.1.1",

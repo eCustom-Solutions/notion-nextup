@@ -5,6 +5,7 @@ A TypeScript CLI tool that processes Notion CSV exports and creates ranked task 
 ## Features
 
 - **CSV Processing**: Reads Notion-style CSV exports and processes them
+- **Notion API Integration**: Direct integration with Notion databases for real-time processing
 - **Task Filtering**: Excludes ineligible tasks based on status and ownership
 - **Queue Ranking**: Calculates deterministic task order per person using:
   - Parent tasks before child tasks (depth-first)
@@ -12,7 +13,9 @@ A TypeScript CLI tool that processes Notion CSV exports and creates ranked task 
   - Higher priority first (High > Medium > Low)
   - Original CSV order as tiebreaker
 - **Projection Calculation**: Computes cumulative days to completion for each task
-- **CSV Output**: Writes processed results with new ranking and projection columns
+- **Surgical Updates**: Updates only tasks that need changes (no unnecessary operations)
+- **Database-Level Filtering**: Optimized performance with Notion's native filtering
+- **User UUID Lookup**: Automatic user name to UUID mapping for precise filtering
 
 ## Installation
 
@@ -66,6 +69,17 @@ npx ts-node src/notionNextup.ts \
     --user "Alice" \
     --dry-run
 
+## Performance
+
+The pipeline is optimized for production use with significant performance improvements:
+
+- **85% faster execution** (112s → 16s for typical workloads)
+- **Database-level filtering** reduces API calls by 90%
+- **Surgical updates** only modify tasks that need changes
+- **Production-ready** for webhook-triggered processing
+
+See `performance-results.md` for detailed performance analysis.
+
 ## Required CSV Columns
 
 - `Name`: Task title
@@ -95,6 +109,17 @@ Tasks are excluded if status is:
 - Live in Dev
 - Ready for QA
 - Live in Staging
+- Blocked
+
+## Performance Optimizations
+
+The pipeline includes several performance optimizations:
+
+- **Database-Level Filtering**: Uses Notion's native filtering to process only relevant tasks
+- **User UUID Lookup**: Automatically maps user names to UUIDs for precise filtering
+- **Surgical Updates**: Only updates tasks that need changes, avoiding unnecessary operations
+- **85% Performance Improvement**: Pipeline runs 85% faster than baseline implementation
+- **Production Ready**: Optimized for webhook-triggered processing with sub-20-second execution
 
 ## Project Structure
 
@@ -104,7 +129,10 @@ notion-nextup/
 │   ├── notionNextup.ts    # Main CLI script
 │   ├── core.ts            # Core business logic
 │   ├── csv-parser.ts      # CSV parsing logic
-│   ├── notion-api.ts      # Notion API integration (future)
+│   ├── notionAdapter.ts   # Notion API integration
+│   ├── user-lookup.ts     # User UUID lookup utilities
+│   ├── debug-tasks.ts     # Debug utilities for data inspection
+│   ├── performance-test.ts # Performance testing utilities
 │   └── types.ts           # Shared type definitions
 ├── examples/               # Sample data and outputs
 │   ├── sample-data/        # Input CSV files
@@ -115,6 +143,8 @@ notion-nextup/
 ├── docs/                   # Project documentation
 │   ├── init_prompt.txt    # Original project specification
 │   └── README.md          # Documentation index
+├── performance-results.md  # Performance optimization results
+├── notion-api-research.txt # Notion API research findings
 ├── package.json           # Project configuration
 ├── tsconfig.json          # TypeScript configuration
 └── README.md             # This file
@@ -127,10 +157,13 @@ The project is designed with a modular architecture to support multiple data sou
 - **`types.ts`**: Shared type definitions and constants
 - **`core.ts`**: Core business logic (queue ranking, eligibility, etc.)
 - **`csv-parser.ts`**: CSV-specific parsing logic
-- **`notion-api.ts`**: Future Notion API integration
+- **`notionAdapter.ts`**: Notion API integration with database-level filtering
+- **`user-lookup.ts`**: User UUID lookup and mapping utilities
+- **`debug-tasks.ts`**: Debug utilities for data inspection
+- **`performance-test.ts`**: Performance testing and benchmarking utilities
 - **`notionNextup.ts`**: CLI entry point that orchestrates the modules
 
-This design allows easy swapping between CSV and Notion API data sources while keeping the core business logic unchanged.
+This design allows easy swapping between CSV and Notion API data sources while keeping the core business logic unchanged. The Notion API integration includes advanced optimizations for production use.
 
 ## Notion API Setup
 
@@ -177,10 +210,19 @@ npm run build
 npx ts-node src/notionNextup.ts --in examples/sample-data/sample_input.csv
 
 # Test Notion API (dry run)
-npm run dev:notion -- --notion-db your-database-id --dry-run
+npx ts-node src/notionNextup.ts --notion-db your-database-id --dry-run
 
-# Test with user filter (default: Derious Vaughn)
-npm run dev:notion -- --notion-db your-database-id --user "Alice" --dry-run
+# Test with user filter
+npx ts-node src/notionNextup.ts --notion-db your-database-id --user "Alice" --dry-run
+
+# Debug task data
+npm run debug
+
+# Run performance tests
+npm run perf
+
+# Run Notion integration tests
+npm run test:notion
 
 # Run integration tests
 npx ts-node src/test-notion.ts
