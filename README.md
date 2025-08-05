@@ -35,8 +35,8 @@ npx ts-node src/notionNextup.ts --in input.csv --out output.csv
 
 ```bash
 npx ts-node src/notionNextup.ts \
-    --in notion-nextup_filtered_derious_populated.csv \
-    --out notion-nextup_ranked.csv
+    --in examples/sample-data/sample_input.csv \
+    --out examples/output/ranked_output.csv
 ```
 
 ## Required CSV Columns
@@ -69,6 +69,24 @@ Tasks are excluded if status is:
 - Ready for QA
 - Live in Staging
 
+## Project Structure
+
+```
+notion-nextup/
+├── src/                    # Source code
+│   └── notionNextup.ts    # Main CLI script
+├── examples/               # Sample data and outputs
+│   ├── sample-data/        # Input CSV files
+│   ├── output/            # Generated output files
+│   └── README.md          # Examples documentation
+├── docs/                   # Project documentation
+│   ├── init_prompt.txt    # Original project specification
+│   └── README.md          # Documentation index
+├── package.json           # Project configuration
+├── tsconfig.json          # TypeScript configuration
+└── README.md             # This file
+```
+
 ## Development
 
 ```bash
@@ -77,4 +95,7 @@ npm run dev
 
 # Build TypeScript
 npm run build
+
+# Test with sample data
+npx ts-node src/notionNextup.ts --in examples/sample-data/sample_input.csv
 ``` 
