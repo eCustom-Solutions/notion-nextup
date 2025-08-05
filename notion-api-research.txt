@@ -1,0 +1,34 @@
+Please research the Notion API and verify the following claims about performance optimizations:
+
+1. RATE LIMITING:
+   - What is Notion's actual rate limit for API requests?
+   - Can we safely increase from 3 requests/second to 5 requests/second?
+   - Are there different limits for different API endpoints (databases.query vs pages.update)?
+
+2. BATCH OPERATIONS:
+   - Does Notion API support batch updates for pages?
+   - Can we update multiple pages in a single API call?
+   - What's the maximum batch size for page updates?
+
+3. DATABASE FILTERING:
+   - Can we filter database queries by multiple properties at once?
+   - Can we filter by people properties (Assignee) in database queries?
+   - Can we exclude specific status values in database queries?
+   - Example: filter for tasks where Assignee = "John" AND Status != "Blocked"
+
+4. PARALLEL PROCESSING:
+   - Can we make multiple concurrent API requests to Notion?
+   - Are there any restrictions on concurrent requests?
+   - What happens if we exceed rate limits with parallel requests?
+
+5. WEBHOOK OPTIMIZATIONS:
+   - Can webhook payloads tell us which specific pages/users were affected?
+   - Can we determine which user's tasks changed from webhook data?
+   - Is there a way to get incremental updates instead of full database queries?
+
+6. PERFORMANCE BEST PRACTICES:
+   - What are Notion's recommended practices for high-performance API usage?
+   - Are there any caching mechanisms available?
+   - Can we use database views or other features to optimize queries?
+
+Please provide specific API documentation references and confirm whether each optimization is technically possible with the current Notion API. 
