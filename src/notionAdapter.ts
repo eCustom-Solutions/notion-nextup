@@ -84,9 +84,6 @@ export async function writeBack(tasks: ProcessedTask[], dbId: string): Promise<v
         },
         'Projected Days to Completion': {
           number: task['Projected Days to Completion']
-        },
-        'Estimated Days Remaining': {
-          number: task['Estimated Days Remaining']
         }
       }
     });
