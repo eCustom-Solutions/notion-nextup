@@ -91,14 +91,44 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
 }
 
 /**
- * Clears queue rank values for all tasks assigned to a specific user
+ * Updates queue ranks surgically - sets new ranks and clears old ones
  */
-export async function clearQueueRanks(databaseId: string, userFilter: string): Promise<void> {
-  console.log(`🧹 Clearing queue ranks for user: ${userFilter}`);
+export async function updateQueueRanksSurgically(
+  databaseId: string, 
+  userFilter: string, 
+  processedTasks: ProcessedTask[]
+): Promise<void> {
+  console.log(`🎯 Surgically updating queue ranks for user: ${userFilter}`);
   
-  let cursor: string | undefined = undefined;
+  // Step 1: Set new queue ranks for processed tasks
+  console.log(`📝 Setting new queue ranks for ${processedTasks.length} tasks...`);
+  for (const task of processedTasks) {
+    if (!task.pageId) {
+      console.warn(`⚠️ Skipping task "${task.Name}" - no pageId found`);
+      continue;
+    }
+
+    const pagesClient = await notion.pages();
+    await pagesClient.update({
+      page_id: task.pageId,
+      properties: {
+        'Queue Rank': {
+          number: task.queue_rank
+        },
+        'Projected Days to Completion': {
+          number: task['Projected Days to Completion']
+        }
+      }
+    });
+  }
+  console.log(`✅ Set queue ranks for ${processedTasks.length} tasks`);
+
+  // Step 2: Clear queue ranks for tasks that shouldn't be in queue anymore
+  console.log(`🧹 Clearing queue ranks for tasks no longer in queue...`);
+  const processedTaskIds = new Set(processedTasks.map(t => t.pageId));
   let clearedCount = 0;
 
+  let cursor: string | undefined = undefined;
   do {
     const notionClient = await notion.databases();
     
@@ -139,24 +169,25 @@ export async function clearQueueRanks(databaseId: string, userFilter: string): P
     const res = await notionClient.query(queryParams);
     
     for (const page of res.results) {
-      // No client-side filtering needed - database already filtered
-      const pagesClient = await notion.pages();
-      await pagesClient.update({
-        page_id: page.id,
-        properties: {
-          'Queue Rank': {
-            number: null
+      // Only clear if this task is NOT in our processed tasks
+      if (!processedTaskIds.has(page.id)) {
+        const pagesClient = await notion.pages();
+        await pagesClient.update({
+          page_id: page.id,
+          properties: {
+            'Queue Rank': {
+              number: null
+            }
           }
-        }
-      });
-      
-      clearedCount++;
+        });
+        clearedCount++;
+      }
     }
     
     cursor = res.has_more && res.next_cursor ? res.next_cursor : undefined;
   } while (cursor);
 
-  console.log(`✅ Cleared queue ranks for ${clearedCount} tasks`);
+  console.log(`✅ Cleared queue ranks for ${clearedCount} tasks no longer in queue`);
 }
 
 /**

@@ -9,7 +9,7 @@ dotenv.config();
 import { loadTasksFromCSV } from './csv-parser';
 import { calculateQueueRank, tasksToCSV } from './core';
 import { ProcessedTask } from './types';
-import { loadTasks, writeBack, clearQueueRanks } from './notionAdapter';
+import { loadTasks, writeBack, updateQueueRanksSurgically } from './notionAdapter';
 
 /**
  * CLI entry point for Notion NextUp
@@ -78,20 +78,15 @@ async function main(): Promise<void> {
         console.log(`Filtering for user: ${userFilter}`);
       }
       
-      // Clear existing queue ranks for this user
-      if (!dryRun) {
-        await clearQueueRanks(notionDbId, userFilter);
-      }
-      
-      tasks = await loadTasks(notionDbId, userFilter);
+            tasks = await loadTasks(notionDbId, userFilter);
       console.log(`Found ${tasks.length} total tasks`);
-      
+
       console.log('Calculating queue ranks and projected days...');
       const processedTasks = calculateQueueRank(tasks);
       
       if (!dryRun) {
         console.log('Writing results back to Notion...');
-        await writeBack(processedTasks, notionDbId);
+        await updateQueueRanksSurgically(notionDbId, userFilter, processedTasks);
         console.log('Processing complete!');
       } else {
         console.log('Dry run mode - skipping writeback');
