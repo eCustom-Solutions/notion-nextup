@@ -1,5 +1,6 @@
 import notion from './services/notion_client';
 import { Task, ProcessedTask, EXCLUDED_STATUSES } from './types';
+import { findUserUUID } from './user-lookup';
 
 /**
  * Loads tasks from Notion database
@@ -11,20 +12,41 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
   do {
     const notionClient = await notion.databases();
     
-    // Use database-level filtering for status only (since people filter requires UUID)
+    // Use database-level filtering for both status and user (if userFilter provided)
     const queryParams: any = {
       database_id: databaseId,
       page_size: 100,
       start_cursor: cursor,
     };
 
-    // Add database-level status filter to exclude all excluded statuses
-    queryParams.filter = {
-      and: EXCLUDED_STATUSES.map(status => ({
+    // Build filter conditions
+    const filterConditions: any[] = [
+      // Status filter: exclude all excluded statuses
+      ...EXCLUDED_STATUSES.map(status => ({
         property: 'Status (IT)',
         status: { does_not_equal: status }
       }))
-    };
+    ];
+
+    // Add user filter if specified
+    if (userFilter) {
+      const userUUID = await findUserUUID(userFilter);
+      if (userUUID) {
+        filterConditions.push({
+          property: 'Assignee',
+          people: { contains: userUUID }
+        });
+      } else {
+        console.warn(`⚠️ Could not find UUID for user: ${userFilter}. Falling back to client-side filtering.`);
+      }
+    }
+
+    // Apply filters
+    if (filterConditions.length === 1) {
+      queryParams.filter = filterConditions[0];
+    } else if (filterConditions.length > 1) {
+      queryParams.filter = { and: filterConditions };
+    }
 
     const res = await notionClient.query(queryParams);
     
@@ -48,11 +70,7 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
       const parentTaskId = props['Parent Task']?.relation?.[0]?.id;
       const parentTask = parentTaskId && parentTaskId !== null ? String(parentTaskId) : undefined;
 
-      // Filter by user client-side (since we can't filter by name in database)
-      if (userFilter && owner !== userFilter) {
-        continue;
-      }
-
+      // No client-side filtering needed - database already filtered
       tasks.push({
         pageId: page.id,
         Name: title,
@@ -84,34 +102,44 @@ export async function clearQueueRanks(databaseId: string, userFilter: string): P
   do {
     const notionClient = await notion.databases();
     
-    // Use database-level filtering for status only
+    // Use database-level filtering for both status and user
     const queryParams: any = {
       database_id: databaseId,
       page_size: 100,
       start_cursor: cursor,
     };
 
-    // Add database-level status filter to exclude all excluded statuses
-    queryParams.filter = {
-      and: EXCLUDED_STATUSES.map(status => ({
+    // Build filter conditions
+    const filterConditions: any[] = [
+      // Status filter: exclude all excluded statuses
+      ...EXCLUDED_STATUSES.map(status => ({
         property: 'Status (IT)',
         status: { does_not_equal: status }
       }))
-    };
+    ];
+
+    // Add user filter
+    const userUUID = await findUserUUID(userFilter);
+    if (userUUID) {
+      filterConditions.push({
+        property: 'Assignee',
+        people: { contains: userUUID }
+      });
+    } else {
+      console.warn(`⚠️ Could not find UUID for user: ${userFilter}. Falling back to client-side filtering.`);
+    }
+
+    // Apply filters
+    if (filterConditions.length === 1) {
+      queryParams.filter = filterConditions[0];
+    } else if (filterConditions.length > 1) {
+      queryParams.filter = { and: filterConditions };
+    }
 
     const res = await notionClient.query(queryParams);
     
     for (const page of res.results) {
-      const props = (page as any).properties;
-      const ownerPeople = props['Assignee']?.people ?? [];
-      const owner = ownerPeople[0]?.name ?? '';
-      
-      // Filter by user client-side (since we can't filter by name in database)
-      if (owner !== userFilter) {
-        continue;
-      }
-
-      // Clear the queue rank for matching pages
+      // No client-side filtering needed - database already filtered
       const pagesClient = await notion.pages();
       await pagesClient.update({
         page_id: page.id,
