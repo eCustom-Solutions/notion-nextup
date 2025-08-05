@@ -1,0 +1,16 @@
+Name,Task Owner,Status (IT),Estimated Days,Estimated Days Remaining,Due,Priority,Parent Task,queue_rank,Projected Days to Completion
+Design System Setup,Alice,In Progress,5,5,,High,,1,5
+User Authentication,Alice,Not Started,3,3,,High,,2,8
+Login Form,Alice,Not Started,2,2,,High,User Authentication,3,10
+Registration Form,Alice,Not Started,2,2,,High,User Authentication,4,12
+Testing Framework,Alice,Not Started,2,2,,Medium,,5,14
+Password Reset,Alice,Not Started,1,1,,Medium,User Authentication,6,15
+Performance Optimization,Alice,Not Started,3,3,,Low,,7,18
+API Endpoints,Bob,Not Started,6,6,,High,,1,6
+Database Schema,Bob,In Progress,4,4,,Medium,,2,10
+Deployment Setup,Bob,Not Started,4,4,,Medium,,3,14
+User Profile,Bob,Not Started,3,3,,Medium,Database Schema,4,17
+Data Migration,Bob,Not Started,2,2,,Low,Database Schema,5,19
+Frontend Components,Charlie,Not Started,4,4,,Medium,,1,4
+Backend Logic,Charlie,Not Started,5,5,,Low,,2,9
+Documentation,Charlie,Not Started,3,3,,Low,,3,12

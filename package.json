@@ -1,0 +1,19 @@
+{
+  "name": "notion-nextup",
+  "version": "1.0.0",
+  "description": "CLI tool to process Notion CSV exports and create ranked task queues",
+  "main": "src/notionNextup.ts",
+  "scripts": {
+    "start": "ts-node src/notionNextup.ts",
+    "build": "tsc",
+    "dev": "ts-node --watch src/notionNextup.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+} 
