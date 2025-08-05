@@ -3,7 +3,7 @@ import { Task, ProcessedTask, EXCLUDED_STATUSES, PRIORITY_MAP } from './types';
 /**
  * Core business logic for Notion NextUp task processing
  * This module contains the core algorithms that work with Task data
- * regardless of the data source (CSV, Notion API, etc.)
+ * regardless of the data source (Notion API, etc.)
  */
 
 /**
@@ -176,7 +176,7 @@ export function calculateQueueRank(tasks: Task[]): ProcessedTask[] {
         queue_score: calculateQueueScore(task),
         'Projected Days to Completion': daysSoFar,
         'Estimated Days Remaining': task['Estimated Days'],
-        pageId: task.pageId || '' // Provide default for CSV tasks
+        pageId: task.pageId || ''
       };
       
       processedTasks.push(processedTask);
@@ -186,26 +186,4 @@ export function calculateQueueRank(tasks: Task[]): ProcessedTask[] {
   return processedTasks;
 }
 
-/**
- * Converts processed tasks to CSV format
- */
-export function tasksToCSV(tasks: ProcessedTask[]): string {
-  const headers = [
-          'Name', 'Assignee', 'Status (IT)', 'Estimated Days', 
-    'Estimated Days Remaining', 'Due', 'Priority', 'Parent Task',
-    'queue_rank', 'queue_score', 'Projected Days to Completion'
-  ];
-  
-  const csvLines = [headers.join(',')];
-  
-  for (const task of tasks) {
-    const values = headers.map(header => {
-      const value = task[header as keyof ProcessedTask];
-      if (value === undefined || value === null) return '';
-      return typeof value === 'string' && value.includes(',') ? `"${value}"` : String(value);
-    });
-    csvLines.push(values.join(','));
-  }
-  
-  return csvLines.join('\n');
-} 
+ 
