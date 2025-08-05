@@ -79,7 +79,7 @@ export async function writeBack(tasks: ProcessedTask[], dbId: string): Promise<v
     await notionClient.update({
       page_id: task.pageId,
       properties: {
-        'queue_rank': {
+        'Queue Rank': {
           number: task.queue_rank
         },
         'Projected Days to Completion': {
