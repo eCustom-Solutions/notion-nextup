@@ -28,8 +28,10 @@ npx ts-node src/notionNextup.ts --in input.csv --out output.csv
 
 ### Arguments
 
-- `--in`: Input CSV file path (required)
+- `--in`: Input CSV file path (required for CSV mode)
 - `--out`: Output CSV file path (optional, defaults to `*_ranked.csv`)
+- `--notion-db`: Notion database ID (required for Notion API mode)
+- `--dry-run`: Skip writing back to Notion (for testing)
 
 ### Example
 
@@ -47,7 +49,15 @@ npx ts-node src/notionNextup.ts \
 npx ts-node src/notionNextup.ts \
     --in my_notion_export.csv \
     --out /path/to/custom/location/result.csv
-```
+
+# Process Notion database (dry run)
+npx ts-node src/notionNextup.ts \
+    --notion-db your-database-id \
+    --dry-run
+
+# Process Notion database (write back)
+npx ts-node src/notionNextup.ts \
+    --notion-db your-database-id
 
 ## Required CSV Columns
 
@@ -115,6 +125,22 @@ The project is designed with a modular architecture to support multiple data sou
 
 This design allows easy swapping between CSV and Notion API data sources while keeping the core business logic unchanged.
 
+## Notion API Setup
+
+To use the Notion API functionality:
+
+1. **Set up Notion API key**:
+   ```bash
+   export NOTION_API_KEY="your-notion-api-key"
+   ```
+
+2. **Get your database ID** from the Notion database URL
+
+3. **Test with dry run**:
+   ```bash
+   npm run dev:notion -- --notion-db your-database-id --dry-run
+   ```
+
 ## Development
 
 ```bash
@@ -126,4 +152,7 @@ npm run build
 
 # Test with sample data
 npx ts-node src/notionNextup.ts --in examples/sample-data/sample_input.csv
+
+# Test Notion API (dry run)
+npm run dev:notion -- --notion-db your-database-id --dry-run
 ``` 

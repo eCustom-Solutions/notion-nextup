@@ -6,7 +6,8 @@
   "scripts": {
     "start": "ts-node src/notionNextup.ts",
     "build": "tsc",
-    "dev": "ts-node --watch src/notionNextup.ts"
+    "dev": "ts-node --watch src/notionNextup.ts",
+    "dev:notion": "ts-node src/notionNextup.ts"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
@@ -15,5 +16,8 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@notionhq/client": "^4.0.1"
   }
-} 
+}

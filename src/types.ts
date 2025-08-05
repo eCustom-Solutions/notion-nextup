@@ -11,12 +11,14 @@ export interface Task {
   'Parent Task'?: string;
   queue_rank?: number;
   'Projected Days to Completion'?: number;
+  pageId?: string; // Added for Notion API support
 }
 
 export interface ProcessedTask extends Task {
   queue_rank: number;
   'Projected Days to Completion': number;
   'Estimated Days Remaining': number;
+  pageId: string; // Required for Notion API writeback
 }
 
 // Constants

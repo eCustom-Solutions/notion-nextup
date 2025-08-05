@@ -122,7 +122,8 @@ export function calculateQueueRank(tasks: Task[]): ProcessedTask[] {
         ...task,
         queue_rank: i + 1,
         'Projected Days to Completion': daysSoFar,
-        'Estimated Days Remaining': task['Estimated Days']
+        'Estimated Days Remaining': task['Estimated Days'],
+        pageId: task.pageId || '' // Provide default for CSV tasks
       };
       
       processedTasks.push(processedTask);
