@@ -66,6 +66,59 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
 }
 
 /**
+ * Clears queue rank values for all tasks assigned to a specific user
+ */
+export async function clearQueueRanks(databaseId: string, userFilter: string): Promise<void> {
+  console.log(`🧹 Clearing queue ranks for user: ${userFilter}`);
+  
+  let cursor: string | undefined = undefined;
+  let clearedCount = 0;
+
+  do {
+    const notionClient = await notion.databases();
+    const res = await notionClient.query({
+      database_id: databaseId,
+      page_size: 100,
+      start_cursor: cursor,
+    });
+    
+    for (const page of res.results) {
+      const props = (page as any).properties;
+      const ownerPeople = props['Assignee']?.people ?? [];
+      const owner = ownerPeople[0]?.name ?? '';
+      const status = props['Status (IT)']?.status?.name ?? '';
+      
+      // Skip excluded statuses
+      if (EXCLUDED_STATUSES.includes(status)) {
+        continue;
+      }
+      
+      // Only clear for the specified user
+      if (owner !== userFilter) {
+        continue;
+      }
+
+      // Clear the queue rank
+      const pagesClient = await notion.pages();
+      await pagesClient.update({
+        page_id: page.id,
+        properties: {
+          'Queue Rank': {
+            number: null
+          }
+        }
+      });
+      
+      clearedCount++;
+    }
+    
+    cursor = res.has_more && res.next_cursor ? res.next_cursor : undefined;
+  } while (cursor);
+
+  console.log(`✅ Cleared queue ranks for ${clearedCount} tasks`);
+}
+
+/**
  * Writes processed tasks back to Notion database
  */
 export async function writeBack(tasks: ProcessedTask[], dbId: string): Promise<void> {
