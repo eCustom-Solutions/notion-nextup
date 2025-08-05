@@ -1,5 +1,5 @@
 import notion from './services/notion_client';
-import { Task, ProcessedTask } from './types';
+import { Task, ProcessedTask, EXCLUDED_STATUSES } from './types';
 
 /**
  * Loads tasks from Notion database
@@ -37,7 +37,7 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
       const parentTask = parentTaskId && parentTaskId !== null ? String(parentTaskId) : undefined;
 
       // Skip pages with excluded statuses
-      if (['Backlogged', 'Done', 'Live in Dev', 'Ready for QA', 'Live in Staging'].includes(status)) {
+      if (EXCLUDED_STATUSES.includes(status)) {
         continue;
       }
 
