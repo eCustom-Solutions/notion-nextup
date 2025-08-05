@@ -2,16 +2,16 @@
   "name": "notion-nextup",
   "version": "1.0.0",
   "description": "CLI tool to process Notion databases and create ranked task queues",
-  "main": "src/notionNextup.ts",
+  "main": "src/cli/notion-nextup.ts",
   "scripts": {
-    "start": "ts-node src/notionNextup.ts",
+    "start": "ts-node src/cli/notion-nextup.ts",
     "build": "tsc",
-    "dev": "ts-node --watch src/notionNextup.ts",
-    "dev:notion": "ts-node src/notionNextup.ts",
+    "dev": "ts-node --watch src/cli/notion-nextup.ts",
+    "dev:notion": "ts-node src/cli/notion-nextup.ts",
     "setup": "./scripts/setup-env.sh",
-    "debug": "ts-node src/debug-tasks.ts",
-    "perf": "ts-node src/performance-test.ts",
-    "test:notion": "ts-node src/test-notion.ts"
+    "debug": "ts-node src/utils/debug-tasks.ts",
+    "perf": "ts-node src/utils/performance-test.ts",
+    "test:notion": "ts-node src/tests/notion-integration.ts"
   },
   "devDependencies": {
     "@types/dotenv": "^6.1.1",

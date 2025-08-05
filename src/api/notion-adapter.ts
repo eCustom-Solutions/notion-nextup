@@ -1,5 +1,5 @@
-import notion from './services/notion_client';
-import { Task, ProcessedTask, EXCLUDED_STATUSES } from './types';
+import notion from './client';
+import { Task, ProcessedTask, EXCLUDED_STATUSES } from '../core/types';
 import { findUserUUID } from './user-lookup';
 
 /**

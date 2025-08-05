@@ -110,16 +110,24 @@ The pipeline includes several performance optimizations:
 ```
 notion-nextup/
 ├── src/                    # Source code
-│   ├── notionNextup.ts    # Main CLI script
-│   ├── core.ts            # Core business logic
-│   ├── notionAdapter.ts   # Notion API integration
-│   ├── user-lookup.ts     # User UUID lookup utilities
-│   ├── debug-tasks.ts     # Debug utilities for data inspection
-│   ├── performance-test.ts # Performance testing utilities
-│   ├── test-notion.ts     # Notion integration tests
-│   ├── services/          # Service modules
-│   │   └── notion_client.ts # Throttled Notion client
-│   └── types.ts           # Shared type definitions
+│   ├── core/               # Core business logic
+│   │   ├── index.ts        # Core exports
+│   │   ├── queue-ranking.ts # Queue ranking algorithms
+│   │   └── types.ts        # Type definitions
+│   ├── api/                # Notion API integration
+│   │   ├── index.ts        # API exports
+│   │   ├── notion-adapter.ts # Database operations
+│   │   ├── user-lookup.ts  # User UUID utilities
+│   │   └── client.ts       # Throttled Notion client
+│   ├── utils/              # Utilities & debugging
+│   │   ├── index.ts        # Utility exports
+│   │   ├── debug-tasks.ts  # Debug utilities
+│   │   └── performance-test.ts # Performance testing
+│   ├── tests/              # Integration tests
+│   │   ├── index.ts        # Test exports
+│   │   └── notion-integration.ts # Notion API tests
+│   └── cli/                # CLI entry point
+│       └── notion-nextup.ts # Main CLI script
 ├── docs/                   # Project documentation
 │   ├── testing-guide.md   # Testing instructions
 │   ├── performance-results.md # Performance optimization results
@@ -138,11 +146,11 @@ The project is designed with a modular architecture to support multiple data sou
 
 - **`types.ts`**: Shared type definitions and constants
 - **`core.ts`**: Core business logic (queue ranking, eligibility, etc.)
-- **`notionAdapter.ts`**: Notion API integration with database-level filtering
-- **`user-lookup.ts`**: User UUID lookup and mapping utilities
-- **`debug-tasks.ts`**: Debug utilities for data inspection
-- **`performance-test.ts`**: Performance testing and benchmarking utilities
-- **`notionNextup.ts`**: CLI entry point that orchestrates the modules
+- **`core/`**: Core business logic (queue ranking, types)
+- **`api/`**: Notion API integration (database operations, user lookup)
+- **`utils/`**: Utilities and debugging tools
+- **`tests/`**: Integration tests
+- **`cli/`**: Command-line interface
 
 This design focuses on Notion API integration with advanced optimizations for production use.
 

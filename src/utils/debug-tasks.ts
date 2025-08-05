@@ -3,8 +3,8 @@
 import * as dotenv from 'dotenv';
 dotenv.config();
 
-import { loadTasks } from './notionAdapter';
-import { Task } from './types';
+import { loadTasks } from '../api/notion-adapter';
+import { Task } from '../core/types';
 
 async function debugTasks() {
   const databaseId = process.env.NOTION_DB_ID;

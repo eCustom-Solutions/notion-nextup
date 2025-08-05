@@ -3,8 +3,8 @@
 import * as dotenv from 'dotenv';
 dotenv.config();
 
-import { loadTasks, updateQueueRanksSurgically } from './notionAdapter';
-import { calculateQueueRank } from './core';
+import { loadTasks, updateQueueRanksSurgically } from '../api/notion-adapter';
+import { calculateQueueRank } from '../core/queue-ranking';
 
 /**
  * Performance test utility for measuring pipeline timing

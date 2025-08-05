@@ -10,8 +10,8 @@ dotenv.config();
  * Run with: npx ts-node src/test-notion.ts
  */
 
-import { loadTasks, writeBack } from './notionAdapter';
-import { calculateQueueRank } from './core';
+import { loadTasks, writeBack } from '../api/notion-adapter';
+import { calculateQueueRank } from '../core/queue-ranking';
 
 async function testNotionIntegration() {
   const databaseId = process.env.NOTION_DB_ID;

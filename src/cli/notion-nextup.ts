@@ -4,8 +4,8 @@ import * as dotenv from 'dotenv';
 
 // Load environment variables from .env file
 dotenv.config();
-import { calculateQueueRank } from './core';
-import { loadTasks, updateQueueRanksSurgically } from './notionAdapter';
+import { calculateQueueRank } from '../core/queue-ranking';
+import { loadTasks, updateQueueRanksSurgically } from '../api/notion-adapter';
 
 /**
  * CLI entry point for Notion NextUp
