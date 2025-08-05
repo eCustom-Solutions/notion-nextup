@@ -23,6 +23,6 @@ export interface ProcessedTask extends Task {
 }
 
 // Constants
-export const EXCLUDED_STATUSES = ['Backlogged', 'Done', 'Live in Dev', 'Ready for QA', 'Live in Staging'];
+export const EXCLUDED_STATUSES = ['Backlogged', 'Done', 'Live in Dev', 'Ready for QA', 'Live in Staging', 'Blocked'];
 export const REQUIRED_COLUMNS = ['Name', 'Assignee', 'Status (IT)', 'Estimated Days'];
 export const PRIORITY_MAP = { 'High': 0, 'Medium': 1, 'Low': 2, '': 3 }; 
