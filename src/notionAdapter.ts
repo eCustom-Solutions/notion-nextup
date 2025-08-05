@@ -10,11 +10,23 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
 
   do {
     const notionClient = await notion.databases();
-    const res = await notionClient.query({
+    
+    // Use database-level filtering for status only (since people filter requires UUID)
+    const queryParams: any = {
       database_id: databaseId,
       page_size: 100,
       start_cursor: cursor,
-    });
+    };
+
+    // Add database-level status filter to exclude all excluded statuses
+    queryParams.filter = {
+      and: EXCLUDED_STATUSES.map(status => ({
+        property: 'Status (IT)',
+        status: { does_not_equal: status }
+      }))
+    };
+
+    const res = await notionClient.query(queryParams);
     
     for (const page of res.results) {
       // Extract properties from Notion page
@@ -36,12 +48,7 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
       const parentTaskId = props['Parent Task']?.relation?.[0]?.id;
       const parentTask = parentTaskId && parentTaskId !== null ? String(parentTaskId) : undefined;
 
-      // Skip pages with excluded statuses
-      if (EXCLUDED_STATUSES.includes(status)) {
-        continue;
-      }
-
-      // Filter by user if specified
+      // Filter by user client-side (since we can't filter by name in database)
       if (userFilter && owner !== userFilter) {
         continue;
       }
@@ -76,29 +83,35 @@ export async function clearQueueRanks(databaseId: string, userFilter: string): P
 
   do {
     const notionClient = await notion.databases();
-    const res = await notionClient.query({
+    
+    // Use database-level filtering for status only
+    const queryParams: any = {
       database_id: databaseId,
       page_size: 100,
       start_cursor: cursor,
-    });
+    };
+
+    // Add database-level status filter to exclude all excluded statuses
+    queryParams.filter = {
+      and: EXCLUDED_STATUSES.map(status => ({
+        property: 'Status (IT)',
+        status: { does_not_equal: status }
+      }))
+    };
+
+    const res = await notionClient.query(queryParams);
     
     for (const page of res.results) {
       const props = (page as any).properties;
       const ownerPeople = props['Assignee']?.people ?? [];
       const owner = ownerPeople[0]?.name ?? '';
-      const status = props['Status (IT)']?.status?.name ?? '';
       
-      // Skip excluded statuses
-      if (EXCLUDED_STATUSES.includes(status)) {
-        continue;
-      }
-      
-      // Only clear for the specified user
+      // Filter by user client-side (since we can't filter by name in database)
       if (owner !== userFilter) {
         continue;
       }
 
-      // Clear the queue rank
+      // Clear the queue rank for matching pages
       const pagesClient = await notion.pages();
       await pagesClient.update({
         page_id: page.id,
