@@ -45,9 +45,15 @@ app.post('/notion-webhook', async (req, res) => {
   
   // Extract user information from the webhook payload
   const userId = req.body?.data?.last_edited_by?.id;
-  const userName = req.body?.data?.last_edited_by?.name;
+  
+  // Try to get user name from Assignee field first, then fallback to last_edited_by
+  const assigneeName = req.body?.data?.properties?.Assignee?.people?.[0]?.name;
+  const lastEditedByName = req.body?.data?.last_edited_by?.name;
+  const userName = assigneeName || lastEditedByName;
   
   console.log('🔍 Extracted user info:', { userId, userName });
+  console.log('🔍 Assignee name:', assigneeName);
+  console.log('🔍 Last edited by name:', lastEditedByName);
   console.log('🔍 Full last_edited_by object:', req.body?.data?.last_edited_by);
   
   if (userId && userName) {
