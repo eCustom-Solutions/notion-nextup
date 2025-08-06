@@ -47,6 +47,9 @@ app.post('/notion-webhook', async (req, res) => {
   const userId = req.body?.data?.last_edited_by?.id;
   const userName = req.body?.data?.last_edited_by?.name;
   
+  console.log('🔍 Extracted user info:', { userId, userName });
+  console.log('🔍 Full last_edited_by object:', req.body?.data?.last_edited_by);
+  
   if (userId && userName) {
     console.log(`👤  Detected user: ${userName} (${userId})`);
     runPipeline(userId, userName).catch(e => console.error('❌ pipeline error:', e));
