@@ -26,13 +26,30 @@ async function runPipeline(userId?: string, userName?: string) {
 
   if (userId && userName) {
     console.log(`🔄  Rebuilding queue for user: ${userName} (${userId})`);
-    const userTasks = await loadTasks(db, userName);   // server-side filtered
-    const processed = calculateQueueRank(userTasks);    // no need for targetUser param
+    
+    // Load tasks with server-side filtering
+    console.log('🔍 Loading tasks from Notion API...');
+    const userTasks = await loadTasks(db, userName);
+    console.log(`📊 Loaded ${userTasks.length} tasks for ${userName}`);
+    
+    // Calculate queue ranks
+    console.log('🧮 Calculating queue ranks...');
+    const processed = calculateQueueRank(userTasks);
+    console.log(`📈 Processed ${processed.length} tasks with queue ranks`);
+    
+    // Update Notion database
+    console.log('🚀 Updating Notion database with new queue ranks...');
     await updateQueueRanksSurgically(db, userName, processed);
     console.log(`✅  Queue updated for ${userName} (${processed.length} tasks)`);
+    
+    console.log('\n📝 Summary:');
+    console.log(`   - Loaded ${userTasks.length} tasks for ${userName}`);
+    console.log(`   - Calculated queue ranks for ${processed.length} tasks`);
+    console.log(`   - Updated Notion database with new ranks and projected completion times`);
+    
   } else {
     console.log('🔄  Rebuilding queue for all users…');
-    const allTasks   = await loadTasks(db);            // no filter
+    const allTasks   = await loadTasks(db);
     const processed  = calculateQueueRank(allTasks);
     await updateQueueRanksSurgically(db, 'ALL', processed);
     console.log(`✅  Queue updated (${processed.length} tasks)`);
@@ -50,6 +67,10 @@ app.post('/notion-webhook', async (req, res) => {
   
   console.log('🔍 Assignee info:', { assigneeId, assigneeName });
   console.log('🔍 Full assignee object:', assignee);
+  
+  // Show task details for debugging
+  const taskName = req.body?.data?.properties?.Name?.title?.[0]?.plain_text || 'Unknown Task';
+  console.log(`📋 Task being updated: "${taskName}"`);
   
   if (assigneeId && assigneeName) {
     console.log(`👤  Detected assignee: ${assigneeName} (${assigneeId})`);
