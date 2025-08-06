@@ -7,7 +7,7 @@ dotenv.config();
 import { calculateQueueRank } from '../core';
 import { loadTasks, updateQueueRanksSurgically } from '../api';
 
-const PORT = Number(process.env.PORT ?? 443);
+const PORT = Number(process.env.PORT ?? 3000);
 const DEBOUNCE_MS = 30_000;   // 30-second back-off
 const app = express();
 app.use(express.json({ limit: '1mb' }));
