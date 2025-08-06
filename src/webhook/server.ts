@@ -27,7 +27,7 @@ async function runPipeline(userId?: string, userName?: string) {
   if (userId && userName) {
     console.log(`🔄  Rebuilding queue for user: ${userName} (${userId})`);
     const allTasks   = await loadTasks(db);            // filtered inside
-    const processed  = calculateQueueRank(allTasks);
+    const processed  = calculateQueueRank(allTasks, userName);
     await updateQueueRanksSurgically(db, userName, processed);
     console.log(`✅  Queue updated for ${userName} (${processed.length} tasks)`);
   } else {

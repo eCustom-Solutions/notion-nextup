@@ -115,10 +115,12 @@ export function calculateQueueScore(task: Task): number {
 }
 
 /**
- * Calculates queue rankings and projected completion times for all tasks
+ * Calculates queue rankings and projected completion times for tasks
  * This is the core algorithm that processes tasks per person
+ * @param tasks - All tasks to process
+ * @param targetUser - Optional: only process tasks for this specific user
  */
-export function calculateQueueRank(tasks: Task[]): ProcessedTask[] {
+export function calculateQueueRank(tasks: Task[], targetUser?: string): ProcessedTask[] {
   // Group tasks by owner
   const tasksByOwner = new Map<string, Task[]>();
   
@@ -137,6 +139,11 @@ export function calculateQueueRank(tasks: Task[]): ProcessedTask[] {
   
   // Process each owner's tasks
   for (const [owner, ownerTasks] of tasksByOwner) {
+    // Skip if we're targeting a specific user and this isn't them
+    if (targetUser && owner !== targetUser) {
+      continue;
+    }
+    
     console.log(`Processing tasks for: ${owner}`);
     
     // Calculate scores and sort tasks for this owner
