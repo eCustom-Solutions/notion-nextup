@@ -14,6 +14,9 @@ build/
 # Project reporter utility (standalone repo)
 project-reporter/
 
+# EC2 instance documentation (standalone repo)
+ec2-instance-docs/
+
 # TypeScript
 *.tsbuildinfo
 
