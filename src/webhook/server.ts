@@ -26,13 +26,13 @@ async function runPipeline(userId?: string, userName?: string) {
 
   if (userId && userName) {
     console.log(`🔄  Rebuilding queue for user: ${userName} (${userId})`);
-    const allTasks   = await loadTasks(db);            // filtered inside
-    const processed  = calculateQueueRank(allTasks, userName);
+    const userTasks = await loadTasks(db, userName);   // server-side filtered
+    const processed = calculateQueueRank(userTasks);    // no need for targetUser param
     await updateQueueRanksSurgically(db, userName, processed);
     console.log(`✅  Queue updated for ${userName} (${processed.length} tasks)`);
   } else {
     console.log('🔄  Rebuilding queue for all users…');
-    const allTasks   = await loadTasks(db);            // filtered inside
+    const allTasks   = await loadTasks(db);            // no filter
     const processed  = calculateQueueRank(allTasks);
     await updateQueueRanksSurgically(db, 'ALL', processed);
     console.log(`✅  Queue updated (${processed.length} tasks)`);
