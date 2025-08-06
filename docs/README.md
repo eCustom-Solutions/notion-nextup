@@ -7,6 +7,7 @@ This directory contains project documentation organized by purpose.
 ### `guides/`
 How-to guides and instructions:
 - **`testing-guide.md`** - Complete testing instructions and setup guide
+- **Webhook Testing**: Use `npx ts-node src/webhook/test-server.ts` for webhook testing
 
 ### `performance/`
 Performance analysis and optimization results:
@@ -23,4 +24,5 @@ Research and planning documents:
 - **Getting Started**: See `guides/testing-guide.md` for setup instructions
 - **Performance**: See `performance/results.md` for optimization details
 - **API Research**: See `research/notion-api-research.txt` for technical findings
-- **Project History**: See `research/original-prompt.txt` for original requirements 
+- **Project History**: See `research/original-prompt.txt` for original requirements
+- **Webhook Testing**: Use `npx ts-node src/webhook/test-server.ts` for webhook testing 

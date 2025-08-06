@@ -5,6 +5,8 @@ A TypeScript CLI tool that processes Notion databases and creates ranked task qu
 ## Features
 
 - **Notion API Integration**: Direct integration with Notion databases for real-time processing
+- **Webhook Server**: Express.js webhook server for real-time Notion updates
+- **Smart Debouncing**: Configurable debounce strategies (simple, queue, delayed execution)
 - **Task Filtering**: Excludes ineligible tasks based on status and ownership
 - **Queue Ranking**: Calculates deterministic task order per person using:
   - Parent tasks before child tasks (depth-first)
@@ -24,33 +26,44 @@ npm install
 
 ## Usage
 
+### CLI Mode
+
 ```bash
-npx ts-node src/notionNextup.ts --notion-db your-database-id
+npx ts-node src/cli/notion-nextup.ts --notion-db your-database-id
 ```
 
-### Arguments
+### Webhook Server Mode
+
+```bash
+npm run start:webhook
+```
+
+### Arguments (CLI Mode)
 
 - `--notion-db`: Notion database ID (required)
 - `--user`: Filter tasks by assignee (default: "Derious Vaughn")
 - `--dry-run`: Skip writing back to Notion (for testing)
 
-### Example
+### Examples
 
 ```bash
 # Process Notion database (dry run)
-npx ts-node src/notionNextup.ts \
+npx ts-node src/cli/notion-nextup.ts \
     --notion-db your-database-id \
     --dry-run
 
 # Process Notion database (write back)
-npx ts-node src/notionNextup.ts \
+npx ts-node src/cli/notion-nextup.ts \
     --notion-db your-database-id
 
 # Process Notion database with user filter
-npx ts-node src/notionNextup.ts \
+npx ts-node src/cli/notion-nextup.ts \
     --notion-db your-database-id \
     --user "Alice" \
     --dry-run
+
+# Start webhook server
+npm run start:webhook
 ```
 
 ## Performance
@@ -119,6 +132,11 @@ notion-nextup/
 │   │   ├── notion-adapter.ts # Database operations
 │   │   ├── user-lookup.ts  # User UUID utilities
 │   │   └── client.ts       # Throttled Notion client
+│   ├── webhook/            # Webhook server & debouncing
+│   │   ├── server.ts       # Express.js webhook server
+│   │   ├── notion-pipeline.ts # Pure Notion API logic
+│   │   ├── debounce.ts     # Generic debounce strategies
+│   │   └── test-server.ts  # Webhook testing utilities
 │   ├── utils/              # Utilities & debugging
 │   │   ├── index.ts        # Utility exports
 │   │   ├── debug-tasks.ts  # Debug utilities
@@ -147,17 +165,27 @@ notion-nextup/
 
 ## Architecture
 
-The project is designed with a modular architecture to support multiple data sources:
+The project is designed with a clean, modular architecture:
 
-- **`types.ts`**: Shared type definitions and constants
-- **`core.ts`**: Core business logic (queue ranking, eligibility, etc.)
+### Core Components
 - **`core/`**: Core business logic (queue ranking, types)
 - **`api/`**: Notion API integration (database operations, user lookup)
+- **`webhook/`**: Webhook server and debouncing logic
+  - `notion-pipeline.ts`: Pure Notion API logic
+  - `debounce.ts`: Generic debounce strategies
+  - `server.ts`: Express.js webhook server
+  - `test-server.ts`: Testing utilities
 - **`utils/`**: Utilities and debugging tools
 - **`tests/`**: Integration tests
 - **`cli/`**: Command-line interface
 
-This design focuses on Notion API integration with advanced optimizations for production use.
+### Webhook Architecture
+The webhook system uses a clean separation of concerns:
+- **Debounce Logic**: Generic debounce strategies in `debounce.ts`
+- **Notion Logic**: Pure API operations in `notion-pipeline.ts`
+- **Server Logic**: HTTP handling in `server.ts`
+
+This design focuses on Notion API integration with advanced optimizations for production use and real-time webhook processing.
 
 ## Notion API Setup
 
@@ -203,10 +231,16 @@ npm run build
 
 
 # Test Notion API (dry run)
-npx ts-node src/notionNextup.ts --notion-db your-database-id --dry-run
+npx ts-node src/cli/notion-nextup.ts --notion-db your-database-id --dry-run
 
 # Test with user filter
-npx ts-node src/notionNextup.ts --notion-db your-database-id --user "Alice" --dry-run
+npx ts-node src/cli/notion-nextup.ts --notion-db your-database-id --user "Alice" --dry-run
+
+# Test webhook logic
+npx ts-node src/webhook/test-server.ts
+
+# Start webhook server
+npm run start:webhook
 
 # Debug task data
 npm run debug

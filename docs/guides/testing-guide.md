@@ -22,10 +22,19 @@ npx ts-node src/test-notion.ts --test-writeback
 ### **3. CLI Testing**
 ```bash
 # Dry run (safe)
-npx ts-node src/notionNextup.ts --notion-db your-db-id --dry-run
+npx ts-node src/cli/notion-nextup.ts --notion-db your-db-id --dry-run
 
 # Full run (updates Notion)
-npx ts-node src/notionNextup.ts --notion-db your-db-id
+npx ts-node src/cli/notion-nextup.ts --notion-db your-db-id
+```
+
+### **4. Webhook Testing**
+```bash
+# Test webhook logic locally
+npx ts-node src/webhook/test-server.ts
+
+# Start webhook server
+npm run start:webhook
 ```
 
 ## 🔧 **Setup for Testing**
@@ -75,6 +84,13 @@ Your Notion database must have these properties:
 - [ ] Performance is acceptable
 - [ ] User filtering works correctly
 
+### **Phase 5: Webhook Testing**
+- [ ] Webhook server starts correctly
+- [ ] Payload parsing works
+- [ ] Assignee extraction works
+- [ ] Debounce strategies work correctly
+- [ ] Notion API updates work via webhook
+
 ## 🚨 **Safety Measures**
 
 ### **Before Testing Writeback**
@@ -86,13 +102,16 @@ Your Notion database must have these properties:
 ### **Safe Testing Commands**
 ```bash
 # Always start with dry run
-npx ts-node src/notionNextup.ts --notion-db your-db-id --dry-run
+npx ts-node src/cli/notion-nextup.ts --notion-db your-db-id --dry-run
 
 # Test with integration script
-npx ts-node src/test-notion.ts
+npx ts-node src/tests/notion-integration.ts
+
+# Test webhook logic
+npx ts-node src/webhook/test-server.ts
 
 # Only after confirming everything works
-npx ts-node src/notionNextup.ts --notion-db your-db-id
+npx ts-node src/cli/notion-nextup.ts --notion-db your-db-id
 ```
 
 ## 🔍 **Debugging Tips**
