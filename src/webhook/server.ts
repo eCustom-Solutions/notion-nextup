@@ -63,4 +63,20 @@ app.get('/healthz', (_, res) => res.send('ok'));
 
 app.listen(PORT, () => {
   console.log(`🚀  Webhook server listening on port ${PORT}`);
+  console.log(`📊  Process ID: ${process.pid}`);
+  console.log(`👤  Running as user: ${process.env.USER || 'unknown'}`);
+  console.log(`🌐  Server URL: http://localhost:${PORT}`);
+  console.log(`🔗  Health endpoint: http://localhost:${PORT}/healthz`);
+  console.log(`📨  Webhook endpoint: http://localhost:${PORT}/notion-webhook`);
+});
+
+// Add error handling
+process.on('uncaughtException', (err) => {
+  console.error('❌ Uncaught Exception:', err);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
 }); 
