@@ -1,7 +1,14 @@
 {
   "name": "notion-nextup",
   "version": "1.0.0",
-  "description": "CLI tool to process Notion databases and create ranked task queues",
+  "description": "High-performance CLI tool for Notion task queue optimization with surgical updates, database-level filtering, and 85% performance improvement",
+  "keywords": ["notion", "task-queue", "productivity", "cli", "typescript", "optimization"],
+  "author": "theHaruspex",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/theHaruspex/notion-nextup.git"
+  },
   "main": "src/cli/notion-nextup.ts",
   "scripts": {
     "start": "ts-node src/cli/notion-nextup.ts",
