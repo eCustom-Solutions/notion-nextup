@@ -139,13 +139,17 @@ export function calculateQueueRank(tasks: Task[]): ProcessedTask[] {
   // Process each owner's tasks
   for (const [owner, ownerTasks] of tasksByOwner) {
     console.log(`Processing tasks for: ${owner}`);
+    console.log(`📊 Processing ${ownerTasks.length} tasks for ${owner}`);
     
     // Calculate scores and sort tasks for this owner
-    const tasksWithScores = ownerTasks.map(task => ({
-      task,
-      score: calculateQueueScore(task)
-    }));
+    console.log('\n🧮 Calculating scores for each task:');
+    const tasksWithScores = ownerTasks.map(task => {
+      const score = calculateQueueScore(task);
+      console.log(`  "${task.Name}" - Score: ${score} (Priority: ${task['Priority']}, Due: ${task['Due']}, Est Days: ${task['Estimated Days']})`);
+      return { task, score };
+    });
     
+    console.log('\n📊 Sorting tasks by score...');
     const sortedTasks = tasksWithScores
       .sort((a, b) => {
         // Primary: Higher score first
@@ -164,6 +168,12 @@ export function calculateQueueRank(tasks: Task[]): ProcessedTask[] {
         return tasks.indexOf(a.task) - tasks.indexOf(b.task);
       })
       .map(item => item.task);
+    
+    console.log('\n📋 Final sorted order:');
+    sortedTasks.forEach((task, index) => {
+      const score = calculateQueueScore(task);
+      console.log(`  ${index + 1}. "${task.Name}" (Score: ${score})`);
+    });
     
     // Calculate queue rank and projected days
     let daysSoFar = 0;
