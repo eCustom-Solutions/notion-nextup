@@ -43,25 +43,21 @@ app.post('/notion-webhook', async (req, res) => {
   console.log('📨  Incoming webhook payload:');
   console.dir(req.body, { depth: 5 });
   
-  // Extract user information from the webhook payload
-  const userId = req.body?.data?.last_edited_by?.id;
+  // Extract assignee information from the webhook payload
+  const assignee = req.body?.data?.properties?.Assignee?.people?.[0];
+  const assigneeId = assignee?.id;
+  const assigneeName = assignee?.name;
   
-  // Try to get user name from Assignee field first, then fallback to last_edited_by
-  const assigneeName = req.body?.data?.properties?.Assignee?.people?.[0]?.name;
-  const lastEditedByName = req.body?.data?.last_edited_by?.name;
-  const userName = assigneeName || lastEditedByName;
+  console.log('🔍 Assignee info:', { assigneeId, assigneeName });
+  console.log('🔍 Full assignee object:', assignee);
   
-  console.log('🔍 Extracted user info:', { userId, userName });
-  console.log('🔍 Assignee name:', assigneeName);
-  console.log('🔍 Last edited by name:', lastEditedByName);
-  console.log('🔍 Full last_edited_by object:', req.body?.data?.last_edited_by);
-  
-  if (userId && userName) {
-    console.log(`👤  Detected user: ${userName} (${userId})`);
-    runPipeline(userId, userName).catch(e => console.error('❌ pipeline error:', e));
+  if (assigneeId && assigneeName) {
+    console.log(`👤  Detected assignee: ${assigneeName} (${assigneeId})`);
+    runPipeline(assigneeId, assigneeName).catch(e => console.error('❌ pipeline error:', e));
   } else {
-    console.log('⚠️  No user info found, rebuilding for all users');
-    runPipeline().catch(e => console.error('❌ pipeline error:', e));
+    console.log('⚠️  No assignee found, skipping queue update');
+    res.status(202).send('accepted - no assignee');
+    return;
   }
   
   res.status(202).send('accepted');
