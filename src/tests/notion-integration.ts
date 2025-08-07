@@ -57,7 +57,7 @@ async function testNotionIntegration() {
     console.log('3️⃣ Sample processed tasks:');
     processedTasks.slice(0, 3).forEach((task, index) => {
       console.log(`   ${index + 1}. ${task.Name} (${task['Assignee']})`);
-      console.log(`      Rank: ${task.queue_rank}, Projected Days: ${task['Projected Days to Completion']}`);
+      console.log(`      Rank: ${task.queue_rank}, Projected Completion: ${task['Projected Completion'] || 'Not set'}`);
     });
 
     // Test 3: Dry run writeback (optional)

@@ -52,7 +52,7 @@ Your Notion database must have these properties:
 - `Status (IT)` (Status)
 - `Estimated Days` (Number)
 - `Queue Rank` (Number - will be updated)
-- `Projected Days to Completion` (Number - will be updated)
+- `Projected Completion` (Date - will be updated)
 - `Due` (Date)
 - `Priority` (Status: High/Medium/Low)
 - `Parent Task` (Text)
