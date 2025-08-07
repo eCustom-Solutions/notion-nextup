@@ -10,15 +10,16 @@ export interface Task {
   'Priority'?: string;
   'Parent Task'?: string;
   'Importance Rollup'?: number;
+  'Task Started Date'?: string;
+  'Projected Completion'?: string;
   queue_rank?: number;
-  'Projected Days to Completion'?: number;
   pageId?: string; // Added for Notion API support
 }
 
 export interface ProcessedTask extends Task {
   queue_rank: number;
   queue_score: number;
-  'Projected Days to Completion': number;
+  'Projected Completion': string;
   'Estimated Days Remaining': number;
   pageId: string; // Required for Notion API writeback
 }

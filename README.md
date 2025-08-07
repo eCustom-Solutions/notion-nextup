@@ -85,7 +85,7 @@ See `performance-results.md` for detailed performance analysis.
 - `Status (IT)`: Task status
 - `Estimated Days`: Effort estimate (number property)
 - `Queue Rank`: Queue ranking (number property, will be updated)
-- `Projected Days to Completion`: Projected completion (number property, will be updated)
+- `Projected Completion`: Projected completion date (date property, will be updated)
 
 ## Optional Notion Database Properties
 
@@ -93,12 +93,13 @@ See `performance-results.md` for detailed performance analysis.
 - `Priority`: Priority level (status property: High/Medium/Low)
 - `Parent Task`: Parent task name (text property)
 - `Importance Rollup`: Importance value (rollup property: 1-100)
+- `Task Started Date`: Task start date (date property, used for completion calculation)
 
 ## Updated Properties
 
 The pipeline updates the following properties in your Notion database:
 - `Queue Rank`: 1-based ranking order
-- `Projected Days to Completion`: Cumulative days to finish
+- `Projected Completion`: Calculated completion date (business days from start date)
 
 ## Excluded Statuses
 

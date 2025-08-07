@@ -71,6 +71,10 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
       const parentTask = parentTaskId && parentTaskId !== null ? String(parentTaskId) : undefined;
       
       const importanceRollup = props['Importance Rollup']?.rollup?.number ?? 0;
+      
+      // Read date properties
+      const taskStartedDate = props['Task Started Date']?.date?.start;
+      const projectedCompletion = props['Projected Completion']?.date?.start;
 
       // No client-side filtering needed - database already filtered
       tasks.push({
@@ -83,7 +87,9 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
         'Due': dueDate,
         'Priority': priority,
         'Parent Task': parentTask,
-        'Importance Rollup': importanceRollup
+        'Importance Rollup': importanceRollup,
+        'Task Started Date': taskStartedDate,
+        'Projected Completion': projectedCompletion
       } as Task);
     }
     
@@ -118,8 +124,10 @@ export async function updateQueueRanksSurgically(
         'Queue Rank': {
           number: task.queue_rank
         },
-        'Projected Days to Completion': {
-          number: task['Projected Days to Completion']
+        'Projected Completion': {
+          date: {
+            start: task['Projected Completion']
+          }
         }
       }
     });
@@ -210,8 +218,10 @@ export async function writeBack(tasks: ProcessedTask[], dbId: string): Promise<v
         'Queue Rank': {
           number: task.queue_rank
         },
-        'Projected Days to Completion': {
-          number: task['Projected Days to Completion']
+        'Projected Completion': {
+          date: {
+            start: task['Projected Completion']
+          }
         }
       }
     });

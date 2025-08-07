@@ -120,6 +120,35 @@ export function calculateQueueScore(task: Task): number {
 }
 
 /**
+ * Calculates a date that is a specified number of business days from a start date
+ * Accounts for weekends and moves weekend dates to Monday
+ */
+export function calculateBusinessDaysFrom(startDate: Date, businessDays: number): Date {
+  let currentDate = new Date(startDate);
+  let daysAdded = 0;
+  
+  while (daysAdded < businessDays) {
+    currentDate.setDate(currentDate.getDate() + 1);
+    
+    // Skip weekends (Saturday = 6, Sunday = 0)
+    const dayOfWeek = currentDate.getDay();
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      daysAdded++;
+    }
+  }
+  
+  // If final date falls on weekend, move to Monday
+  const finalDayOfWeek = currentDate.getDay();
+  if (finalDayOfWeek === 6) { // Saturday
+    currentDate.setDate(currentDate.getDate() + 2); // Move to Monday
+  } else if (finalDayOfWeek === 0) { // Sunday
+    currentDate.setDate(currentDate.getDate() + 1); // Move to Monday
+  }
+  
+  return currentDate;
+}
+
+/**
  * Calculates queue rankings and projected completion times for tasks
  * This is the core algorithm that processes tasks per person
  * @param tasks - Tasks to process (should be pre-filtered by user if targeting specific user)
@@ -180,18 +209,22 @@ export function calculateQueueRank(tasks: Task[]): ProcessedTask[] {
       console.log(`  ${index + 1}. "${task.Name}" (Score: ${score})`);
     });
     
-    // Calculate queue rank and projected days
-    let daysSoFar = 0;
+    // Calculate queue rank and projected completion dates
+    let businessDaysSoFar = 0;
     for (let i = 0; i < sortedTasks.length; i++) {
       const task = sortedTasks[i];
       const estimatedDaysRemaining = task['Estimated Days Remaining'] || task['Estimated Days'] || 0;
-      daysSoFar += estimatedDaysRemaining;
+      businessDaysSoFar += estimatedDaysRemaining;
+      
+      // Calculate completion date from Task Started Date
+      const startDate = task['Task Started Date'] ? new Date(task['Task Started Date']) : new Date();
+      const completionDate = calculateBusinessDaysFrom(startDate, businessDaysSoFar);
       
       const processedTask: ProcessedTask = {
         ...task,
         queue_rank: i + 1,
         queue_score: calculateQueueScore(task),
-        'Projected Days to Completion': daysSoFar,
+        'Projected Completion': completionDate.toISOString().split('T')[0], // YYYY-MM-DD format
         'Estimated Days Remaining': estimatedDaysRemaining,
         pageId: task.pageId || ''
       };
