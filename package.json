@@ -19,8 +19,8 @@
     "debug": "ts-node src/utils/debug-tasks.ts",
     "perf": "ts-node src/utils/performance-test.ts",
     "test:notion": "ts-node src/tests/notion-integration.ts",
-    "start:webhook": "ts-node src/webhook/server.ts",
-    "start:demo": "ts-node src/webhook/demo-server.ts"
+    "start:webhook": "ts-node src/webhook/http/prod-server.ts",
+    "start:demo": "ts-node src/webhook/http/demo-server.ts"
   },
   "devDependencies": {
     "@types/dotenv": "^6.1.1",
