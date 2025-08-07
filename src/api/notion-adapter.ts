@@ -124,13 +124,11 @@ export async function updateQueueRanksSurgically(
         'Queue Rank': {
           number: task.queue_rank
         },
-        ...(task['Projected Completion'] ? {
-          'Projected Completion': {
-            date: {
-              start: task['Projected Completion']
-            }
+        'Projected Completion': {
+          date: {
+            start: task['Projected Completion']
           }
-        } : {})
+        }
       }
     });
   }
@@ -220,13 +218,11 @@ export async function writeBack(tasks: ProcessedTask[], dbId: string): Promise<v
         'Queue Rank': {
           number: task.queue_rank
         },
-        ...(task['Projected Completion'] ? {
-          'Projected Completion': {
-            date: {
-              start: task['Projected Completion']
-            }
+        'Projected Completion': {
+          date: {
+            start: task['Projected Completion']
           }
-        } : {})
+        }
       }
     });
   }

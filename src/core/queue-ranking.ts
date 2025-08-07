@@ -64,59 +64,9 @@ export function buildTaskHierarchy(tasks: Task[]): Map<string, Task[]> {
  * Higher score = higher priority
  */
 export function calculateQueueScore(task: Task): number {
-  let score = 0;
-  
-  // Factor 1: Priority (0-100 points)
-  const priorityScore = {
-    'High': 100,
-    'Medium': 60,
-    'Low': 20,
-    '': 0
-  };
-  score += priorityScore[task['Priority'] as keyof typeof priorityScore] || 0;
-  
-  // Factor 2: Due date urgency (0-50 points)
-  if (task['Due']) {
-    const dueDate = parseDate(task['Due']);
-    if (dueDate) {
-      const now = new Date();
-      const daysUntilDue = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-      
-      if (daysUntilDue <= 0) {
-        score += 50; // Overdue - highest urgency
-      } else if (daysUntilDue <= 3) {
-        score += 40; // Due very soon
-      } else if (daysUntilDue <= 7) {
-        score += 30; // Due this week
-      } else if (daysUntilDue <= 14) {
-        score += 20; // Due in 2 weeks
-      } else if (daysUntilDue <= 30) {
-        score += 10; // Due in a month
-      }
-      // Beyond 30 days = 0 points
-    }
-  }
-  
-  // Factor 3: Parent task bonus (25 points)
-  if (task['Parent Task']) {
-    score += 25; // Parent tasks get priority
-  }
-  
-  // Factor 4: Task size penalty (0 to -20 points)
-  // Shorter tasks get slight preference
-  const estimatedDays = task['Estimated Days'] || 0;
-  if (estimatedDays > 10) {
-    score -= 20; // Very long tasks get penalized
-  } else if (estimatedDays > 5) {
-    score -= 10; // Long tasks get slight penalty
-  }
-  
-  // Factor 5: Importance Rollup (0-100 points)
-  // Higher importance values bump tasks up the queue
+  // TEMPORARY PATCH: Only use Importance stat for queue ranking
   const importance = task['Importance Rollup'] || 0;
-  score += importance;
-  
-  return Math.max(0, score); // Ensure score is never negative
+  return importance;
 }
 
 /**
@@ -216,13 +166,10 @@ export function calculateQueueRank(tasks: Task[]): ProcessedTask[] {
       const estimatedDaysRemaining = task['Estimated Days Remaining'] || task['Estimated Days'] || 0;
       businessDaysSoFar += estimatedDaysRemaining;
       
-      // Calculate completion date only if Task Started Date exists
-      let projectedCompletion: string | undefined;
-      if (task['Task Started Date']) {
-        const startDate = new Date(task['Task Started Date']);
-        const completionDate = calculateBusinessDaysFrom(startDate, businessDaysSoFar);
-        projectedCompletion = completionDate.toISOString().split('T')[0]; // YYYY-MM-DD format
-      }
+      // Calculate completion date for all tasks (use today as fallback if no Task Started Date)
+      const startDate = task['Task Started Date'] ? new Date(task['Task Started Date']) : new Date();
+      const completionDate = calculateBusinessDaysFrom(startDate, businessDaysSoFar);
+      const projectedCompletion = completionDate.toISOString().split('T')[0]; // YYYY-MM-DD format
       
       const processedTask: ProcessedTask = {
         ...task,

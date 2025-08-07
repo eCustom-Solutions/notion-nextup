@@ -19,7 +19,7 @@ export interface Task {
 export interface ProcessedTask extends Task {
   queue_rank: number;
   queue_score: number;
-  'Projected Completion'?: string;
+  'Projected Completion': string;
   'Estimated Days Remaining': number;
   pageId: string; // Required for Notion API writeback
 }
