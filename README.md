@@ -14,7 +14,7 @@ A TypeScript CLI tool that processes Notion databases and creates ranked task qu
   - Higher priority first (High > Medium > Low)
   - Higher importance values first (1-100 scale)
   - Original CSV order as tiebreaker
-- **Projection Calculation**: Computes cumulative days to completion for each task
+- **Projection Calculation**: Computes Projected Completion dates using business days from `Task Started Date` and `Estimated Days Remaining` (falls back to `Estimated Days` if missing)
 - **Surgical Updates**: Updates only tasks that need changes (no unnecessary operations)
 - **Database-Level Filtering**: Optimized performance with Notion's native filtering
 - **User UUID Lookup**: Automatic user name to UUID mapping for precise filtering
@@ -83,7 +83,7 @@ See `performance-results.md` for detailed performance analysis.
 - `Name`: Task title
 - `Assignee`: Assignee (people property)
 - `Status (IT)`: Task status
-- `Estimated Days`: Effort estimate (number property)
+- `Estimated Days Remaining` (preferred) or `Estimated Days`: Effort estimate (number property)
 - `Queue Rank`: Queue ranking (number property, will be updated)
 - `Projected Completion`: Projected completion date (date property, will be updated)
 
@@ -135,11 +135,20 @@ notion-nextup/
 │   │   ├── notion-adapter.ts # Database operations
 │   │   ├── user-lookup.ts  # User UUID utilities
 │   │   └── client.ts       # Throttled Notion client
-│   ├── webhook/            # Webhook server & debouncing
-│   │   ├── server.ts       # Express.js webhook server
-│   │   ├── notion-pipeline.ts # Pure Notion API logic
-│   │   ├── debounce.ts     # Generic debounce strategies
-│   │   └── test-server.ts  # Webhook testing utilities
+│   ├── webhook/            # Webhook servers, debounce, runtime
+│   │   ├── config.ts       # Centralized config (PORT, debounce, logging)
+│   │   ├── types.ts        # Webhook types
+│   │   ├── debounce.ts     # Debounce strategies and manager
+│   │   ├── notion-pipeline.ts # Pure pipeline to process one user
+│   │   ├── http/
+│   │   │   ├── base-server.ts  # Express app factory + /healthz
+│   │   │   ├── prod-server.ts  # Production server (all users)
+│   │   │   └── demo-server.ts  # Demo server (filtered user)
+│   │   ├── runtime/
+│   │   │   └── invoke-pipeline.ts # Wrapper to call pipeline
+│   │   ├── tests/
+│   │   │   └── test-server.ts    # Local test harness
+│   │   └── README.md
 │   ├── utils/              # Utilities & debugging
 │   │   ├── index.ts        # Utility exports
 │   │   ├── debug-tasks.ts  # Debug utilities
@@ -153,8 +162,8 @@ notion-nextup/
 │   ├── guides/             # How-to guides
 │   │   └── testing-guide.md # Testing instructions
 │   ├── performance/        # Performance analysis
-│   │   ├── results.md      # Performance results
-│   │   └── results.json    # Raw performance data
+│   │   ├── performance-results.md   # Performance results
+│   │   └── performance-results.json # Raw performance data
 │   ├── research/           # Research & planning
 │   │   ├── notion-api-research.txt # API research
 │   │   └── original-prompt.txt # Original requirements
@@ -186,7 +195,7 @@ The project is designed with a clean, modular architecture:
 The webhook system uses a clean separation of concerns:
 - **Debounce Logic**: Generic debounce strategies in `debounce.ts`
 - **Notion Logic**: Pure API operations in `notion-pipeline.ts`
-- **Server Logic**: HTTP handling in `server.ts`
+- **Server Logic**: HTTP handling in `http/prod-server.ts` and `http/demo-server.ts`
 
 This design focuses on Notion API integration with advanced optimizations for production use and real-time webhook processing.
 
@@ -239,11 +248,12 @@ npx ts-node src/cli/notion-nextup.ts --notion-db your-database-id --dry-run
 # Test with user filter
 npx ts-node src/cli/notion-nextup.ts --notion-db your-database-id --user "Alice" --dry-run
 
-# Test webhook logic
-npx ts-node src/webhook/test-server.ts
+# Test webhook logic (local test harness)
+npx ts-node src/webhook/tests/test-server.ts
 
-# Start webhook server
-npm run start:webhook
+# Start webhook servers
+npm run start:webhook   # prod server
+npm run start:demo      # demo server
 
 # Debug task data
 npm run debug
@@ -255,10 +265,10 @@ npm run perf
 npm run test:notion
 
 # Run integration tests
-npx ts-node src/test-notion.ts
+npx ts-node src/tests/notion-integration.ts
 
 # Run integration tests with user filter
-npx ts-node src/test-notion.ts --user "Alice"
+npx ts-node src/tests/notion-integration.ts --user "Alice"
 
 # Run unit tests
 npm test 

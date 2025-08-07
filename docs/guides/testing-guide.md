@@ -30,11 +30,13 @@ npx ts-node src/cli/notion-nextup.ts --notion-db your-db-id
 
 ### **4. Webhook Testing**
 ```bash
-# Test webhook logic locally
-npx ts-node src/webhook/test-server.ts
+# Test webhook logic locally (test harness)
+ENABLE_DATABASE_UPDATES=false DEMO_USER_ID=1ded872b-594c-8161-addd-0002825994b5 DEMO_USER_NAME="Derious Vaughn" \
+npx ts-node src/webhook/tests/test-server.ts
 
-# Start webhook server
-npm run start:webhook
+# Start webhook servers
+npm run start:webhook   # prod
+npm run start:demo      # demo
 ```
 
 ## 🔧 **Setup for Testing**
@@ -50,12 +52,14 @@ Your Notion database must have these properties:
 - `Name` (Title)
 - `Assignee` (People)
 - `Status (IT)` (Status)
-- `Estimated Days` (Number)
+- `Estimated Days Remaining` (Number) — or `Estimated Days` as fallback
 - `Queue Rank` (Number - will be updated)
 - `Projected Completion` (Date - will be updated)
 - `Due` (Date)
 - `Priority` (Status: High/Medium/Low)
 - `Parent Task` (Text)
+ - `Importance Rollup` (Rollup: 1–100)
+ - `Task Started Date` (Date)
 
 ## 📋 **Testing Checklist**
 
@@ -70,7 +74,7 @@ Your Notion database must have these properties:
 - [ ] Tasks are properly mapped to Task interface
 - [ ] Excluded statuses are filtered out
 - [ ] Queue ranking algorithm works
-- [ ] Projected days are calculated correctly
+- [ ] Projected completion dates are calculated correctly (business days, using start date)
 
 ### **Phase 3: Writeback Testing**
 - [ ] Dry run shows correct updates

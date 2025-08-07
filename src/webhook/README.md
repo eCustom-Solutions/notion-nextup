@@ -31,6 +31,7 @@ This directory contains the webhook servers and supporting utilities for process
 - `npm run start:webhook` → starts `http/prod-server.ts`
 - `npm run start:demo` → starts `http/demo-server.ts`
 - `npx ts-node src/webhook/tests/test-server.ts` → runs the local test harness
+  - Example (safe): `ENABLE_DATABASE_UPDATES=false DEMO_USER_ID=1ded872b-594c-8161-addd-0002825994b5 DEMO_USER_NAME="Derious Vaughn" npx ts-node src/webhook/tests/test-server.ts`
 
 ## Configuration
 
@@ -42,6 +43,10 @@ Set via environment variables (see `src/webhook/config.ts`):
 - Demo mode only:
   - `DEMO_USER_ID`
   - `DEMO_USER_NAME`
+
+Notes:
+- `Projected Completion` is written as a Notion date; `Estimated Days Remaining` is preferred for timeline math and falls back to `Estimated Days`.
+- Temporarily, queue score equals `Importance Rollup` (1–100) while weighting is evaluated.
 
 ## Endpoints
 
