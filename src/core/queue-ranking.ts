@@ -216,15 +216,19 @@ export function calculateQueueRank(tasks: Task[]): ProcessedTask[] {
       const estimatedDaysRemaining = task['Estimated Days Remaining'] || task['Estimated Days'] || 0;
       businessDaysSoFar += estimatedDaysRemaining;
       
-      // Calculate completion date from Task Started Date
-      const startDate = task['Task Started Date'] ? new Date(task['Task Started Date']) : new Date();
-      const completionDate = calculateBusinessDaysFrom(startDate, businessDaysSoFar);
+      // Calculate completion date only if Task Started Date exists
+      let projectedCompletion: string | undefined;
+      if (task['Task Started Date']) {
+        const startDate = new Date(task['Task Started Date']);
+        const completionDate = calculateBusinessDaysFrom(startDate, businessDaysSoFar);
+        projectedCompletion = completionDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+      }
       
       const processedTask: ProcessedTask = {
         ...task,
         queue_rank: i + 1,
         queue_score: calculateQueueScore(task),
-        'Projected Completion': completionDate.toISOString().split('T')[0], // YYYY-MM-DD format
+        'Projected Completion': projectedCompletion,
         'Estimated Days Remaining': estimatedDaysRemaining,
         pageId: task.pageId || ''
       };
