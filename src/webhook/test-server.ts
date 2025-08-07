@@ -66,27 +66,13 @@ async function testWebhookLogic() {
       enableDatabaseUpdates: true
     };
     
-    // Test with simple debounce strategy
-    console.log('\n🧪 Testing with simple debounce strategy...');
-    const simpleDebounceManager = new DebounceManager({ enableLogging: true }, simpleDebounce);
-    await simpleDebounceManager.processEvent(assigneeId, assigneeName, (userId, userName) => 
-      runNotionPipeline(userId, userName, pipelineOptions)
-    );
-    
-    // Test with queue debounce strategy
-    console.log('\n🧪 Testing with queue debounce strategy...');
-    const queueDebounceManager = new DebounceManager({ enableLogging: true }, queueDebounce);
-    await queueDebounceManager.processEvent(assigneeId, assigneeName, (userId, userName) => 
-      runNotionPipeline(userId, userName, pipelineOptions)
-    );
-    
-    // Test with delayed execution strategy
-    console.log('\n🧪 Testing with delayed execution strategy...');
-    const delayedDebounceManager = new DebounceManager({ 
+    // Test with delayed execution strategy (preferred for webhooks)
+    console.log('\n🧪 Testing webhook pipeline...');
+    const debounceManager = new DebounceManager({ 
       debounceMs: 5000, 
       enableLogging: true 
     }, delayedExecution);
-    await delayedDebounceManager.processEvent(assigneeId, assigneeName, (userId, userName) => 
+    await debounceManager.processEvent(assigneeId, assigneeName, (userId, userName) => 
       runNotionPipeline(userId, userName, pipelineOptions)
     );
     

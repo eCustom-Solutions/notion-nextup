@@ -111,6 +111,11 @@ export function calculateQueueScore(task: Task): number {
     score -= 10; // Long tasks get slight penalty
   }
   
+  // Factor 5: Importance Rollup (0-100 points)
+  // Higher importance values bump tasks up the queue
+  const importance = task['Importance Rollup'] || 0;
+  score += importance;
+  
   return Math.max(0, score); // Ensure score is never negative
 }
 
@@ -145,7 +150,7 @@ export function calculateQueueRank(tasks: Task[]): ProcessedTask[] {
     console.log('\n🧮 Calculating scores for each task:');
     const tasksWithScores = ownerTasks.map(task => {
       const score = calculateQueueScore(task);
-      console.log(`  "${task.Name}" - Score: ${score} (Priority: ${task['Priority']}, Due: ${task['Due']}, Est Days: ${task['Estimated Days']})`);
+      console.log(`  "${task.Name}" - Score: ${score} (Priority: ${task['Priority']}, Due: ${task['Due']}, Est Days: ${task['Estimated Days']}, Importance: ${task['Importance Rollup'] || 0})`);
       return { task, score };
     });
     
@@ -179,14 +184,15 @@ export function calculateQueueRank(tasks: Task[]): ProcessedTask[] {
     let daysSoFar = 0;
     for (let i = 0; i < sortedTasks.length; i++) {
       const task = sortedTasks[i];
-      daysSoFar += task['Estimated Days'];
+      const estimatedDaysRemaining = task['Estimated Days Remaining'] || task['Estimated Days'] || 0;
+      daysSoFar += estimatedDaysRemaining;
       
       const processedTask: ProcessedTask = {
         ...task,
         queue_rank: i + 1,
         queue_score: calculateQueueScore(task),
         'Projected Days to Completion': daysSoFar,
-        'Estimated Days Remaining': task['Estimated Days'],
+        'Estimated Days Remaining': estimatedDaysRemaining,
         pageId: task.pageId || ''
       };
       

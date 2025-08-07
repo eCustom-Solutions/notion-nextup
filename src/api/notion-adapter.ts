@@ -69,6 +69,8 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
       const priority = props['Priority']?.status?.name ?? '';
       const parentTaskId = props['Parent Task']?.relation?.[0]?.id;
       const parentTask = parentTaskId && parentTaskId !== null ? String(parentTaskId) : undefined;
+      
+      const importanceRollup = props['Importance Rollup']?.rollup?.number ?? 0;
 
       // No client-side filtering needed - database already filtered
       tasks.push({
@@ -80,7 +82,8 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
         'Estimated Days Remaining': estRem,
         'Due': dueDate,
         'Priority': priority,
-        'Parent Task': parentTask
+        'Parent Task': parentTask,
+        'Importance Rollup': importanceRollup
       } as Task);
     }
     

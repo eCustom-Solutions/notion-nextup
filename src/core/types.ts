@@ -9,6 +9,7 @@ export interface Task {
   'Due'?: string;
   'Priority'?: string;
   'Parent Task'?: string;
+  'Importance Rollup'?: number;
   queue_rank?: number;
   'Projected Days to Completion'?: number;
   pageId?: string; // Added for Notion API support

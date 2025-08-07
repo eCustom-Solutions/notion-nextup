@@ -12,6 +12,7 @@ A TypeScript CLI tool that processes Notion databases and creates ranked task qu
   - Parent tasks before child tasks (depth-first)
   - Earlier due dates first
   - Higher priority first (High > Medium > Low)
+  - Higher importance values first (1-100 scale)
   - Original CSV order as tiebreaker
 - **Projection Calculation**: Computes cumulative days to completion for each task
 - **Surgical Updates**: Updates only tasks that need changes (no unnecessary operations)
@@ -91,6 +92,7 @@ See `performance-results.md` for detailed performance analysis.
 - `Due`: Due date (date property)
 - `Priority`: Priority level (status property: High/Medium/Low)
 - `Parent Task`: Parent task name (text property)
+- `Importance Rollup`: Importance value (rollup property: 1-100)
 
 ## Updated Properties
 
