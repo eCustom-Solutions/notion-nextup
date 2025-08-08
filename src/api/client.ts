@@ -1,4 +1,5 @@
 import { Client } from '@notionhq/client';
+import { TokenBucket } from '../utils/token-bucket';
 
 // Create the base Notion client
 const notion = new Client({
@@ -8,26 +9,14 @@ const notion = new Client({
 // Throttled wrapper to enforce rate limits
 class ThrottledNotionClient {
   private client: Client;
-  private lastRequestTime = 0;
-  private requestCount = 0;
-  private readonly maxRequestsPerSecond = 3;
-  private readonly maxConcurrent = 1;
+  private readonly bucket = new TokenBucket(3, 3); // capacity 3, refill 3/sec
 
   constructor(client: Client) {
     this.client = client;
   }
 
   private async throttle(): Promise<void> {
-    const now = Date.now();
-    const timeSinceLastRequest = now - this.lastRequestTime;
-    const minInterval = 1000 / this.maxRequestsPerSecond; // 333ms between requests
-
-    if (timeSinceLastRequest < minInterval) {
-      await new Promise(resolve => setTimeout(resolve, minInterval - timeSinceLastRequest));
-    }
-
-    this.lastRequestTime = Date.now();
-    this.requestCount++;
+    await this.bucket.acquire();
   }
 
   async databases() {
