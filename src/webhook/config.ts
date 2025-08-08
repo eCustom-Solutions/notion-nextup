@@ -1,10 +1,19 @@
 import * as dotenv from 'dotenv';
+// Load environment variables once at startup. This module is the single source of truth
+// for runtime configuration. Prefer adding new knobs here with safe defaults.
 dotenv.config();
 
+// Server / Webhook
 export const PORT: number = Number(process.env.PORT ?? 443);
 export const DEBOUNCE_MS: number = Number(process.env.WEBHOOK_DEBOUNCE_MS ?? 10_000);
-export const ENABLE_DATABASE_UPDATES: boolean = String(process.env.ENABLE_DATABASE_UPDATES ?? 'true') === 'true';
 export const LOG_LEVEL: 'debug' | 'info' | 'silent' = (process.env.LOG_LEVEL as any) ?? 'info';
+
+// Safety / Write mode
+// - ENABLE_DATABASE_UPDATES=false → DRY-RUN (no writes)
+// - ENABLE_DATABASE_UPDATES=true  → Live writes (guard with CONFIRM_LIVE in harness)
+export const ENABLE_DATABASE_UPDATES: boolean = String(process.env.ENABLE_DATABASE_UPDATES ?? 'true') === 'true';
+
+// Global rate limiting for Notion API
 export const GLOBAL_RPS: number = Number(process.env.GLOBAL_RPS ?? 3);
 export const TOKEN_BUCKET_CAPACITY: number = Number(process.env.TOKEN_BUCKET_CAPACITY ?? 3);
 
