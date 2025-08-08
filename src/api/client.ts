@@ -33,6 +33,10 @@ class ThrottledNotionClient {
       update: async (params: any) => {
         await this.throttle();
         return this.client.pages.update(params);
+      },
+      retrieve: async (params: any) => {
+        await this.throttle();
+        return this.client.pages.retrieve(params);
       }
     };
   }
