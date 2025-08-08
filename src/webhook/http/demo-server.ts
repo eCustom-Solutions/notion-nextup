@@ -5,16 +5,11 @@ dotenv.config();
 
 import { createBaseApp } from './base-server';
 import { PORT, DEBOUNCE_MS, DEMO_USER_ID, DEMO_USER_NAME } from '../config';
-import { DebounceManager, delayedExecution, DebounceOptions } from '../debounce';
-import { invokePipeline } from '../runtime/invoke-pipeline';
+import { startScheduler } from '../scheduler';
 
 const app = createBaseApp();
 
-const debounceOptions: DebounceOptions = {
-  debounceMs: DEBOUNCE_MS,
-  enableLogging: true,
-};
-const debounceManager = new DebounceManager(debounceOptions, delayedExecution);
+const scheduler = startScheduler({ debounceMs: DEBOUNCE_MS, enableLogging: true });
 
 app.post('/notion-webhook', async (req, res) => {
   const assignee = req.body?.data?.properties?.Assignee?.people?.[0];
@@ -22,9 +17,7 @@ app.post('/notion-webhook', async (req, res) => {
   const assigneeName = assignee?.name;
 
   if (assigneeId === DEMO_USER_ID && assigneeName === DEMO_USER_NAME) {
-    debounceManager.processEvent(assigneeId, assigneeName, (userId, userName) => 
-      invokePipeline(userId, userName)
-    ).catch((e: Error) => console.error('pipeline error:', e));
+    scheduler.routeEvent(assigneeId, assigneeName);
     res.status(200).send('accepted - demo user processed');
   } else {
     res.status(202).send('accepted - demo user only');
