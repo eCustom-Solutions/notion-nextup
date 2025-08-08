@@ -236,13 +236,19 @@ async function notionCall<T>(fn: () => Promise<T>): Promise<T> {
 - Long-running users with very large task counts: should we chunk updates?
 
 ### 20) Deliverables Checklist
-- [ ] Per-user debounce state + global FIFO
-- [ ] Single worker loop + rerun mechanics
-- [ ] Global token bucket at 3 rps (all Notion calls use it)
-- [ ] Updated webhook handler to extract user and route to per-user debounce
+- [x] Per-user debounce state + global FIFO
+  - Implemented under `src/webhook/scheduler/` (`per-user-state.ts`, `ready-queue.ts`, `debounce-router.ts`)
+- [x] Single worker loop + rerun mechanics
+  - Implemented in `src/webhook/scheduler/worker.ts` and wired via `src/webhook/scheduler/index.ts`
+- [x] Global token bucket at 3 rps (all Notion calls use it)
+  - Implemented `src/utils/token-bucket.ts`; integrated in `src/api/client.ts` so all Notion calls acquire tokens
+- [x] Updated webhook handler to extract user and route to per-user debounce
+  - `src/webhook/http/prod-server.ts` and `src/webhook/http/demo-server.ts` now delegate to `startScheduler(...).routeEvent(...)`
 - [ ] Observability: queue depth, processing time, token waits, 429s
-- [ ] Config knobs and sane defaults
-- [ ] Demo + production server wired to new scheduler
+- [x] Config knobs and sane defaults
+  - Added `GLOBAL_RPS` and `TOKEN_BUCKET_CAPACITY` to `src/webhook/config.ts` (client currently uses defaults; see next steps)
+- [x] Demo + production server wired to new scheduler
+  - Both servers initialize the scheduler once and route events to it
 
 ### 21) Code Organization & Integration Points
 
@@ -294,3 +300,25 @@ This change can be added with minimal churn by keeping existing boundaries and i
   - Add scheduler directory and utilities; do not modify ranking logic
   - Centralize rate limiting in API client (no call-site changes needed)
   - Servers delegate to scheduler instead of pipeline directly
+
+### 22) Current Implementation Snapshot (Aug 2025)
+- Scheduler (new):
+  - `src/webhook/scheduler/per-user-state.ts`
+  - `src/webhook/scheduler/ready-queue.ts`
+  - `src/webhook/scheduler/debounce-router.ts`
+  - `src/webhook/scheduler/worker.ts`
+  - `src/webhook/scheduler/index.ts`
+- Rate limiting (new):
+  - `src/utils/token-bucket.ts`
+  - Integrated in `src/api/client.ts`
+- Server wiring (updated):
+  - `src/webhook/http/prod-server.ts`
+  - `src/webhook/http/demo-server.ts`
+- Config (updated):
+  - `src/webhook/config.ts` adds `GLOBAL_RPS`, `TOKEN_BUCKET_CAPACITY`
+
+Optional next steps (proposed):
+- Wire `GLOBAL_RPS` and `TOKEN_BUCKET_CAPACITY` into `src/api/client.ts` instead of fixed defaults
+- Add `src/webhook/scheduler/metrics.ts` to emit queue depth, processing durations, token waits, and 429 counts
+- Enhance rate-limit handling to respect Notion `Retry-After` headers and temporarily reduce effective rate
+- Extend `src/webhook/tests/test-server.ts` with multi-user burst/alternation scenarios; optional `stress-test.ts`
