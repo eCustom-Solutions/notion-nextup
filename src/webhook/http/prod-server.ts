@@ -3,6 +3,8 @@
 import * as dotenv from 'dotenv';
 dotenv.config();
 
+import fs from 'fs';
+import path from 'path';
 import { createBaseApp } from './base-server';
 import { PORT, DEBOUNCE_MS } from '../config';
 import { startScheduler } from '../scheduler';
@@ -11,12 +13,58 @@ const app = createBaseApp();
 
 const scheduler = startScheduler({ debounceMs: DEBOUNCE_MS, enableLogging: true });
 
+// Include list: allow processing only for these user UUIDs if provided
+function loadIncludeUUIDs(): Set<string> {
+  const includeUuidsRaw = process.env.USERS_INCLUDE_UUIDS; // comma-separated
+  const includeFileRaw = process.env.USERS_INCLUDE_FILE; // JSON or CSV path
+  const defaultAllowlistPath = path.resolve(process.cwd(), 'src/webhook/allowlists/tech-users.json');
+  let uuids: string[] = [];
+
+  try {
+    if (includeUuidsRaw) {
+      uuids = includeUuidsRaw.split(',').map(s => s.trim()).filter(Boolean);
+    } else {
+      const candidatePath = includeFileRaw ? path.resolve(process.cwd(), includeFileRaw) : defaultAllowlistPath;
+      if (fs.existsSync(candidatePath)) {
+        const content = fs.readFileSync(candidatePath, 'utf8');
+        if (/\{/.test(content)) {
+          const json = JSON.parse(content);
+          if (Array.isArray(json.uuids)) uuids = json.uuids as string[];
+        } else {
+          // CSV
+          uuids = content.split(/\r?\n/)
+            .map(l => l.trim())
+            .filter(l => l && !/^name/i.test(l))
+            .map(l => l.split(',')[1]?.trim())
+            .filter(Boolean) as string[];
+        }
+      }
+    }
+  } catch {
+    // ignore include list parse errors
+  }
+
+  const set = new Set<string>(uuids);
+  if (set.size > 0) {
+    console.log(`🔒 Allowlist active: ${set.size} user UUIDs will be processed`);
+  } else {
+    console.log('ℹ️ No allowlist configured; processing all users');
+  }
+  return set;
+}
+
+const includeUUIDs = loadIncludeUUIDs();
+
 app.post('/notion-webhook', async (req, res) => {
   const assignee = req.body?.data?.properties?.Assignee?.people?.[0];
   const assigneeId = assignee?.id;
   const assigneeName = assignee?.name;
 
   if (assigneeId && assigneeName) {
+    if (includeUUIDs.size > 0 && !includeUUIDs.has(assigneeId)) {
+      res.status(202).send('accepted - filtered by allowlist');
+      return;
+    }
     scheduler.routeEvent(assigneeId, assigneeName);
     res.status(202).send('accepted');
   } else {
