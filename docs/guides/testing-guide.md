@@ -28,10 +28,14 @@ npx ts-node src/cli/notion-nextup.ts --notion-db your-db-id --dry-run
 npx ts-node src/cli/notion-nextup.ts --notion-db your-db-id
 ```
 
-### **4. Webhook Testing (Scheduler)**
+### **4. Webhook/Scheduler Testing (All Users Harness)**
 ```bash
-# Test webhook logic locally (scheduler-backed harness; no writes)
-ENABLE_DATABASE_UPDATES=false DEMO_USER_ID=1ded872b-594c-8161-addd-0002825994b5 DEMO_USER_NAME="Derious Vaughn" \
+# Dry run across all users (safe)
+USERS_FILTER="(Alice|Bob|Derious)" ENABLE_DATABASE_UPDATES=false \
+npx ts-node src/webhook/tests/test-server.ts
+
+# Live run across all users (guarded)
+CONFIRM_LIVE=ALL_USERS ENABLE_DATABASE_UPDATES=true USERS_FILTER="Alice" \
 npx ts-node src/webhook/tests/test-server.ts
 
 # Start webhook servers (delegate to scheduler)
