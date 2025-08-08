@@ -7,7 +7,7 @@ This directory contains project documentation organized by purpose.
 ### `guides/`
 How-to guides and instructions:
 - **`testing-guide.md`** - Complete testing instructions and setup guide
-- **Webhook Testing**: Use `npx ts-node src/webhook/test-server.ts` for webhook testing
+- **Webhook Testing**: Use `npx ts-node src/webhook/tests/test-server.ts` (scheduler-backed) or `npx ts-node src/webhook/tests/scheduler-sim.ts` (simulation)
 
 ### `performance/`
 Performance analysis and optimization results:

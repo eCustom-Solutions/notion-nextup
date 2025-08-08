@@ -28,15 +28,20 @@ npx ts-node src/cli/notion-nextup.ts --notion-db your-db-id --dry-run
 npx ts-node src/cli/notion-nextup.ts --notion-db your-db-id
 ```
 
-### **4. Webhook Testing**
+### **4. Webhook Testing (Scheduler)**
 ```bash
-# Test webhook logic locally (test harness)
+# Test webhook logic locally (scheduler-backed harness; no writes)
 ENABLE_DATABASE_UPDATES=false DEMO_USER_ID=1ded872b-594c-8161-addd-0002825994b5 DEMO_USER_NAME="Derious Vaughn" \
 npx ts-node src/webhook/tests/test-server.ts
 
-# Start webhook servers
+# Start webhook servers (delegate to scheduler)
 npm run start:webhook   # prod
 npm run start:demo      # demo
+
+### **5. Scheduler Simulation (No HTTP, No Notion)**
+```bash
+npx ts-node src/webhook/tests/scheduler-sim.ts
+```
 ```
 
 ## 🔧 **Setup for Testing**
@@ -88,12 +93,12 @@ Your Notion database must have these properties:
 - [ ] Performance is acceptable
 - [ ] User filtering works correctly
 
-### **Phase 5: Webhook Testing**
-- [ ] Webhook server starts correctly
+### **Phase 5: Webhook/Scheduler Testing**
+- [ ] Server starts correctly
 - [ ] Payload parsing works
 - [ ] Assignee extraction works
-- [ ] Debounce strategies work correctly
-- [ ] Notion API updates work via webhook
+- [ ] Per-user debounce and FCFS queueing works
+- [ ] Notion API updates work via webhook (respect rate limit)
 
 ## 🚨 **Safety Measures**
 

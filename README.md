@@ -6,7 +6,7 @@ A TypeScript CLI tool that processes Notion databases and creates ranked task qu
 
 - **Notion API Integration**: Direct integration with Notion databases for real-time processing
 - **Webhook Server**: Express.js webhook server for real-time Notion updates
-- **Smart Debouncing**: Configurable debounce strategies (simple, queue, delayed execution)
+- **Per-User Scheduler**: Debounce per user, FCFS global queue, single worker with fairness
 - **Task Filtering**: Excludes ineligible tasks based on status and ownership
 - **Queue Ranking**: Calculates deterministic task order per person using:
   - Parent tasks before child tasks (depth-first)
@@ -135,10 +135,10 @@ notion-nextup/
 │   │   ├── notion-adapter.ts # Database operations
 │   │   ├── user-lookup.ts  # User UUID utilities
 │   │   └── client.ts       # Throttled Notion client
-│   ├── webhook/            # Webhook servers, debounce, runtime
-│   │   ├── config.ts       # Centralized config (PORT, debounce, logging)
+│   ├── webhook/            # Webhook servers, scheduler, runtime
+│   │   ├── config.ts       # Centralized config (PORT, debounce, logging, globals)
 │   │   ├── types.ts        # Webhook types
-│   │   ├── debounce.ts     # Debounce strategies and manager
+│   │   ├── scheduler/      # Per-user debounce + global FIFO + single worker
 │   │   ├── notion-pipeline.ts # Pure pipeline to process one user
 │   │   ├── http/
 │   │   │   ├── base-server.ts  # Express app factory + /healthz
@@ -147,7 +147,8 @@ notion-nextup/
 │   │   ├── runtime/
 │   │   │   └── invoke-pipeline.ts # Wrapper to call pipeline
 │   │   ├── tests/
-│   │   │   └── test-server.ts    # Local test harness
+│   │   │   ├── test-server.ts    # Scheduler-backed local harness
+│   │   │   └── scheduler-sim.ts  # No-HTTP, no-Notion scheduling simulation
 │   │   └── README.md
 │   ├── utils/              # Utilities & debugging
 │   │   ├── index.ts        # Utility exports
@@ -193,9 +194,9 @@ The project is designed with a clean, modular architecture:
 
 ### Webhook Architecture
 The webhook system uses a clean separation of concerns:
-- **Debounce Logic**: Generic debounce strategies in `debounce.ts`
+- **Scheduler**: Per-user debounce → global FIFO → single worker (`webhook/scheduler/*`)
 - **Notion Logic**: Pure API operations in `notion-pipeline.ts`
-- **Server Logic**: HTTP handling in `http/prod-server.ts` and `http/demo-server.ts`
+- **Server Logic**: HTTP handling in `http/prod-server.ts` and `http/demo-server.ts` delegating to the scheduler
 
 This design focuses on Notion API integration with advanced optimizations for production use and real-time webhook processing.
 
