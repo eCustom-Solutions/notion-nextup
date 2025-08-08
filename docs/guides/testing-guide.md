@@ -28,14 +28,25 @@ npx ts-node src/cli/notion-nextup.ts --notion-db your-db-id --dry-run
 npx ts-node src/cli/notion-nextup.ts --notion-db your-db-id
 ```
 
-### **4. Webhook/Scheduler Testing (All Users Harness)**
+### **4. Webhook/Scheduler Testing (Targeted Users Harness)**
 ```bash
-# Dry run across all users (safe)
+# Default: runs only the tech allowlist (versioned)
+ENABLE_DATABASE_UPDATES=false npx ts-node src/webhook/tests/test-server.ts
+
+# Override include list via CSV/JSON file
+USERS_INCLUDE_FILE=reports/users_technology.csv ENABLE_DATABASE_UPDATES=false \
+npx ts-node src/webhook/tests/test-server.ts
+
+# Override include list via UUIDs
+USERS_INCLUDE_UUIDS="uuid1,uuid2" ENABLE_DATABASE_UPDATES=false \
+npx ts-node src/webhook/tests/test-server.ts
+
+# Fallback: regex filter against workspace names
 USERS_FILTER="(Alice|Bob|Derious)" ENABLE_DATABASE_UPDATES=false \
 npx ts-node src/webhook/tests/test-server.ts
 
-# Live run across all users (guarded)
-CONFIRM_LIVE=ALL_USERS ENABLE_DATABASE_UPDATES=true USERS_FILTER="Alice" \
+# Live run (guarded)
+CONFIRM_LIVE=ALL_USERS ENABLE_DATABASE_UPDATES=true USERS_INCLUDE_FILE=src/webhook/allowlists/tech-users.json \
 npx ts-node src/webhook/tests/test-server.ts
 
 # Start webhook servers (delegate to scheduler)
