@@ -249,6 +249,8 @@ async function notionCall<T>(fn: () => Promise<T>): Promise<T> {
   - Added `GLOBAL_RPS` and `TOKEN_BUCKET_CAPACITY` to `src/webhook/config.ts` (client currently uses defaults; see next steps)
 - [x] Demo + production server wired to new scheduler
   - Both servers initialize the scheduler once and route events to it
+- [x] Remove legacy debounce manager code
+  - `src/webhook/debounce.ts` deleted; servers and tests use scheduler exclusively
 
 ### 21) Code Organization & Integration Points
 

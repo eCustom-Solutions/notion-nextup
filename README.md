@@ -183,11 +183,11 @@ The project is designed with a clean, modular architecture:
 ### Core Components
 - **`core/`**: Core business logic (queue ranking, types)
 - **`api/`**: Notion API integration (database operations, user lookup)
-- **`webhook/`**: Webhook server and debouncing logic
+- **`webhook/`**: Webhook server and scheduler
   - `notion-pipeline.ts`: Pure Notion API logic
-  - `debounce.ts`: Generic debounce strategies
-  - `server.ts`: Express.js webhook server
-  - `test-server.ts`: Testing utilities
+  - `scheduler/*`: Per-user debounce + global FIFO + single worker
+  - `http/*`: Express.js webhook servers
+  - `tests/*`: Scheduler-backed local harness and simulation
 - **`utils/`**: Utilities and debugging tools
 - **`tests/`**: Integration tests
 - **`cli/`**: Command-line interface
