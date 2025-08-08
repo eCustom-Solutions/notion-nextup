@@ -100,6 +100,70 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
 }
 
 /**
+ * Clears Queue Rank for tasks for a user that are in excluded statuses and still have a rank set.
+ * Returns the number of pages cleared.
+ */
+export async function clearExcludedQueueRanksForUser(
+  databaseId: string,
+  userFilter: string,
+  limit: number = 50
+): Promise<number> {
+  let cleared = 0;
+  let cursor: string | undefined = undefined;
+  const userUUID = await findUserUUID(userFilter);
+
+  do {
+    const notionClient = await notion.databases();
+
+    const statusFilters = EXCLUDED_STATUSES.map(status => ({
+      property: 'Status (IT)',
+      status: { equals: status }
+    }));
+
+    const andFilters: any[] = [
+      { property: 'Queue Rank', number: { is_not_empty: true } },
+    ];
+
+    if (userUUID) {
+      andFilters.push({ property: 'Assignee', people: { contains: userUUID } });
+    }
+
+    const queryParams: any = {
+      database_id: databaseId,
+      page_size: Math.min(100, limit - cleared > 0 ? limit - cleared : 0) || 1,
+      start_cursor: cursor,
+      filter: {
+        and: [
+          { or: statusFilters },
+          ...andFilters,
+        ]
+      }
+    };
+
+    const res = await notionClient.query(queryParams);
+    if (!res.results || res.results.length === 0) {
+      break;
+    }
+
+    for (const page of res.results) {
+      if (cleared >= limit) break;
+      const pagesClient = await notion.pages();
+      await pagesClient.update({
+        page_id: (page as any).id,
+        properties: {
+          'Queue Rank': { number: null }
+        }
+      });
+      cleared++;
+    }
+
+    cursor = (res as any).has_more && (res as any).next_cursor ? (res as any).next_cursor : undefined;
+  } while (cursor && cleared < limit);
+
+  return cleared;
+}
+
+/**
  * Updates queue ranks surgically - sets new ranks and clears old ones
  */
 export async function updateQueueRanksSurgically(
@@ -131,6 +195,17 @@ export async function updateQueueRanksSurgically(
         }
       }
     });
+
+    // Post-update verification (best-effort)
+    try {
+      const updated = await pagesClient.retrieve({ page_id: task.pageId });
+      const updatedProps: any = (updated as any).properties ?? {};
+      const verifiedDate: string | undefined = updatedProps['Projected Completion']?.date?.start;
+      const verifiedRank: number | null | undefined = updatedProps['Queue Rank']?.number;
+      console.log(`🔎 Verified page ${task.pageId}: Projected Completion=${verifiedDate ?? 'undefined'}, Queue Rank=${verifiedRank ?? 'undefined'}`);
+    } catch (e) {
+      console.warn(`⚠️ Verification failed for page ${task.pageId}`);
+    }
   }
   console.log(`✅ Set queue ranks for ${processedTasks.length} tasks`);
 
@@ -199,6 +274,11 @@ export async function updateQueueRanksSurgically(
   } while (cursor);
 
   console.log(`✅ Cleared queue ranks for ${clearedCount} tasks no longer in queue`);
+
+  // Step 3: Clear queue ranks for tasks that are now in excluded statuses
+  console.log(`🧹 Clearing queue ranks for excluded-status tasks...`);
+  const clearedExcluded = await clearExcludedQueueRanksForUser(databaseId, userFilter);
+  console.log(`✅ Cleared queue ranks for ${clearedExcluded} excluded-status tasks`);
 }
 
 /**
