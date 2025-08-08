@@ -197,6 +197,7 @@ The webhook system uses a clean separation of concerns:
 - **Scheduler**: Per-user debounce → global FIFO → single worker (`webhook/scheduler/*`)
 - **Notion Logic**: Pure API operations in `notion-pipeline.ts`
 - **Server Logic**: HTTP handling in `http/prod-server.ts` and `http/demo-server.ts` delegating to the scheduler
+- **Post-Write Cleanup**: After writeback, clear lingering `Queue Rank` for tasks in excluded statuses for the processed user (best-effort)
 
 This design focuses on Notion API integration with advanced optimizations for production use and real-time webhook processing.
 

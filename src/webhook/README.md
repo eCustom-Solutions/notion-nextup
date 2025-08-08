@@ -28,6 +28,7 @@ This directory contains the webhook servers and supporting utilities for process
    - Users are enqueued FCFS on timer fire; single worker processes users one at a time
    - If events arrive mid-run, that user is re-queued to the tail (fairness)
 4. The pipeline loads that user’s tasks (database-level filters), computes ranking and projected completion, and performs surgical updates back to Notion.
+5. After writeback, the system clears any lingering `Queue Rank` for that user on tasks whose `Status (IT)` is now excluded (best-effort cleanup)
 
 ## Scripts
 

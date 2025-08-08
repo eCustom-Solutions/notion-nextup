@@ -43,6 +43,7 @@ Flow:
 3. Worker pops next userId (FCFS by ready-time), then runs the user pipeline end-to-end. Per-user concurrency is 1
 4. If additional events for that user arrive while processing, set `rerunRequested=true` for that user; after finishing, requeue that user to the tail to preserve fairness
 5. All API calls pass through the Token Bucket (3 rps)
+6. After writeback, clear any lingering Queue Rank on that user’s tasks that are now in excluded statuses (best-effort, bounded batch)
 
 ### 6) Per-User Debounce Manager (State Machine)
 Per-user state:
@@ -251,6 +252,8 @@ async function notionCall<T>(fn: () => Promise<T>): Promise<T> {
   - Both servers initialize the scheduler once and route events to it
 - [x] Remove legacy debounce manager code
   - `src/webhook/debounce.ts` deleted; servers and tests use scheduler exclusively
+- [x] Post-write cleanup of excluded-status ranks per user
+  - After writeback, query the user’s tasks where `Status (IT)` is excluded and `Queue Rank` is set; clear those ranks (best-effort)
 
 ### 21) Code Organization & Integration Points
 

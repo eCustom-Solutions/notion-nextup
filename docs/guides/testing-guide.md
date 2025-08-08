@@ -53,6 +53,8 @@ npx ts-node src/webhook/tests/test-server.ts
 npm run start:webhook   # prod
 npm run start:demo      # demo
 
+Note: Live runs also clear any lingering `Queue Rank` on excluded-status tasks for the processed users.
+
 ### **5. Scheduler Simulation (No HTTP, No Notion)**
 ```bash
 npx ts-node src/webhook/tests/scheduler-sim.ts
