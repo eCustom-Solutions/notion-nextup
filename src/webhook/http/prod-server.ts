@@ -58,6 +58,12 @@ function loadIncludeUUIDs(): Set<string> {
 const includeUUIDs = loadIncludeUUIDs();
 
 app.post('/notion-webhook', async (req, res) => {
+  // Log all incoming webhooks for debugging
+  const webhookId = req.body?.data?.id || 'unknown';
+  const webhookDb = req.body?.data?.parent?.database_id || 'unknown';
+  const webhookType = req.body?.data?.properties ? 'with-properties' : 'no-properties';
+  console.log(`📨 Webhook received: id=${webhookId}, db=${webhookDb}, type=${webhookType}`);
+
   const assignee = req.body?.data?.properties?.Assignee?.people?.[0];
   const assigneeId = assignee?.id;
   const assigneeName = assignee?.name;
