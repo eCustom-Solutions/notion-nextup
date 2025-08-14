@@ -1,7 +1,7 @@
 import * as dotenv from 'dotenv';
-// Load environment variables once at startup. This module is the single source of truth
-// for runtime configuration. Prefer adding new knobs here with safe defaults.
-dotenv.config();
+import path from 'path';
+// Load environment variables once at startup from repo root .env explicitly
+dotenv.config({ path: path.resolve(__dirname, '../../..', '.env') });
 
 // Server / Webhook
 export const PORT: number = Number(process.env.PORT ?? 443);
