@@ -9,8 +9,62 @@ import path from 'path';
 import { getAllUsers } from '../../api/user-lookup';
 import { invokePipeline } from '../runtime/invoke-pipeline';
 import { DEBOUNCE_MS } from '../config';
+// Notion client instance used by adapters – we can monkey‑patch for simulations
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import notionClient from '../../api/client';
 
 function sleep(ms: number) { return new Promise((r) => setTimeout(r, ms)); }
+
+// Install simulation of mid‑workflow errors (archived/conflict) for specific page IDs
+function installWriteSimulators() {
+  const archivedIds = new Set(
+    (process.env.SIMULATE_ARCHIVED_PAGE_IDS || '')
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean)
+  );
+  const conflictIds = new Set(
+    (process.env.SIMULATE_CONFLICT_PAGE_IDS || '')
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean)
+  );
+  if (archivedIds.size === 0 && conflictIds.size === 0) return;
+
+  const conflictOnce = new Set<string>();
+  const origPages = notionClient.pages.bind(notionClient);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (notionClient as any).pages = async () => {
+    const p = await origPages();
+    const origUpdate = p.update.bind(p);
+    const origRetrieve = p.retrieve?.bind(p);
+    return {
+      ...p,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      update: async (params: any) => {
+        const pageId = params?.page_id as string | undefined;
+        if (pageId && archivedIds.has(pageId)) {
+          const err: any = new Error("Can't edit block that is archived. You must unarchive the block before editing.");
+          err.code = 'validation_error';
+          throw err;
+        }
+        if (pageId && conflictIds.has(pageId) && !conflictOnce.has(pageId)) {
+          conflictOnce.add(pageId);
+          const err: any = new Error('Conflict occurred while saving. Please try again.');
+          err.code = 'conflict_error';
+          throw err;
+        }
+        return origUpdate(params);
+      },
+      // pass through
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      retrieve: origRetrieve ? (async (params: any) => origRetrieve(params)) : undefined,
+    };
+  };
+
+  console.log(`🔬 Write simulators active: archived=${archivedIds.size}, conflict-once=${conflictIds.size}`);
+}
 
 async function runAllUsersHarness() {
   const dbId = process.env.NOTION_DB_ID;
@@ -35,6 +89,9 @@ async function runAllUsersHarness() {
   console.log(`   - Mode: ${dryRun ? 'DRY-RUN (no writes)' : 'LIVE (writes enabled)'}`);
   if (regex) console.log(`   - Users filter: ${regex}`);
   if (maxUsers > 0) console.log(`   - Max users: ${maxUsers}`);
+
+  // Enable mid‑workflow error simulations if requested
+  installWriteSimulators();
 
   const completed = new Set<string>();
   const scheduler = startScheduler({
