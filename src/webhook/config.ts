@@ -20,3 +20,6 @@ export const TOKEN_BUCKET_CAPACITY: number = Number(process.env.TOKEN_BUCKET_CAP
 // Demo-mode (optional)
 export const DEMO_USER_ID: string | undefined = process.env.DEMO_USER_ID ?? '1ded872b-594c-8161-addd-0002825994b5';
 export const DEMO_USER_NAME: string | undefined = process.env.DEMO_USER_NAME ?? 'Derious Vaughn';
+
+// Objectives database (optional) for objective→tasks fanout
+export const OBJECTIVES_DB_ID: string | undefined = process.env.OBJECTIVES_DB_ID;

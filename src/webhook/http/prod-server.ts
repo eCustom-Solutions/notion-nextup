@@ -6,7 +6,7 @@ dotenv.config();
 import fs from 'fs';
 import path from 'path';
 import { createBaseApp } from './base-server';
-import { PORT, DEBOUNCE_MS } from '../config';
+import { PORT, DEBOUNCE_MS, OBJECTIVES_DB_ID } from '../config';
 import { startScheduler } from '../scheduler';
 
 const app = createBaseApp();
@@ -59,6 +59,12 @@ app.post('/notion-webhook', async (req, res) => {
   const assignee = req.body?.data?.properties?.Assignee?.people?.[0];
   const assigneeId = assignee?.id;
   const assigneeName = assignee?.name;
+  const parentDb = req.body?.data?.parent?.database_id as string | undefined;
+
+  if (OBJECTIVES_DB_ID && parentDb === OBJECTIVES_DB_ID) {
+    console.log(`🎯 Objective event received for page ${req.body?.data?.id} in DB ${parentDb}`);
+    return res.status(202).send('accepted - objective event logged');
+  }
 
   if (assigneeId && assigneeName) {
     if (includeUUIDs.size > 0 && !includeUUIDs.has(assigneeId)) {
