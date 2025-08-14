@@ -21,6 +21,12 @@ class ThrottledNotionClient {
 
   async databases() {
     return {
+      retrieve: async (params: any) => {
+        await this.throttle();
+        // params: { database_id }
+        // @ts-ignore
+        return this.client.databases.retrieve(params);
+      },
       query: async (params: any) => {
         await this.throttle();
         return this.client.databases.query(params);

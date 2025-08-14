@@ -8,10 +8,12 @@ import path from 'path';
 import { createBaseApp } from './base-server';
 import { PORT, DEBOUNCE_MS, OBJECTIVES_DB_ID } from '../config';
 import { startScheduler } from '../scheduler';
+import { getAssigneesForObjective } from '../../api/objective-fanout';
 
 const app = createBaseApp();
 
 const scheduler = startScheduler({ debounceMs: DEBOUNCE_MS, enableLogging: true });
+const objectiveLastHandledAt = new Map<string, number>();
 
 // Include list: allow processing only for these user UUIDs if provided
 function loadIncludeUUIDs(): Set<string> {
@@ -62,8 +64,31 @@ app.post('/notion-webhook', async (req, res) => {
   const parentDb = req.body?.data?.parent?.database_id as string | undefined;
 
   if (OBJECTIVES_DB_ID && parentDb === OBJECTIVES_DB_ID) {
-    console.log(`🎯 Objective event received for page ${req.body?.data?.id} in DB ${parentDb}`);
-    return res.status(202).send('accepted - objective event logged');
+    const objectiveId = req.body?.data?.id as string | undefined;
+    console.log(`🎯 Objective event received for page ${objectiveId} in DB ${parentDb}`);
+    if (!objectiveId) return res.status(202).send('accepted - objective event with no page id');
+    const now = Date.now();
+    const last = objectiveLastHandledAt.get(objectiveId) || 0;
+    if (now - last < Number(DEBOUNCE_MS)) {
+      console.log(`⏱️  Skipping objective fanout (debounced) for ${objectiveId}`);
+      return res.status(202).send('accepted - objective event debounced');
+    }
+    objectiveLastHandledAt.set(objectiveId, now);
+
+    try {
+      const tasksDbId = process.env.NOTION_DB_ID as string;
+      const relationName = process.env.TASKS_OBJECTIVE_RELATION_NAME; // undefined → auto-detect
+      const { assignees, triedRelations } = await getAssigneesForObjective(tasksDbId, objectiveId, relationName);
+      console.log(`🎯 Relation scan:`, triedRelations);
+      const preFilterCount = assignees.length;
+      const allowed = assignees.filter(a => includeUUIDs.size === 0 || includeUUIDs.has(a.id));
+      console.log(`🎯 Fanout: objective ${objectiveId} → ${preFilterCount} assignees, ${allowed.length} after allowlist`);
+      for (const a of allowed) scheduler.routeEvent(a.id, a.name);
+      return res.status(202).send('accepted - objective event enqueued assignees');
+    } catch (err) {
+      console.warn('⚠️ Objective fanout error:', err);
+      return res.status(202).send('accepted - objective fanout error (logged)');
+    }
   }
 
   if (assigneeId && assigneeName) {
