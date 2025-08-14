@@ -57,6 +57,11 @@ function loadIncludeUUIDs(): Set<string> {
 
 const includeUUIDs = loadIncludeUUIDs();
 
+// Helper to normalize Notion database IDs for comparison (remove dashes)
+function normalizeNotionId(id: string): string {
+  return id.replace(/-/g, '');
+}
+
 app.post('/notion-webhook', async (req, res) => {
   // Log all incoming webhooks for debugging
   const webhookId = req.body?.data?.id || 'unknown';
@@ -69,7 +74,7 @@ app.post('/notion-webhook', async (req, res) => {
   const assigneeName = assignee?.name;
   const parentDb = req.body?.data?.parent?.database_id as string | undefined;
 
-  if (OBJECTIVES_DB_ID && parentDb === OBJECTIVES_DB_ID) {
+  if (OBJECTIVES_DB_ID && parentDb && normalizeNotionId(parentDb) === normalizeNotionId(OBJECTIVES_DB_ID)) {
     const objectiveId = req.body?.data?.id as string | undefined;
     console.log(`🎯 Objective event received for page ${objectiveId} in DB ${parentDb}`);
     if (!objectiveId) return res.status(202).send('accepted - objective event with no page id');
