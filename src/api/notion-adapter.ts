@@ -1,5 +1,9 @@
 import notion from './client';
 import { Task, ProcessedTask, EXCLUDED_STATUSES } from '../core/types';
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 import { findUserUUID } from './user-lookup';
 
 /**
@@ -51,6 +55,7 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
     const res = await notionClient.query(queryParams);
     
     for (const page of res.results) {
+      if ((page as any).archived === true) continue;
       // Extract properties from Notion page
       const props = (page as any).properties;
       const title = props['Name']?.title?.[0]?.plain_text ?? '';
@@ -148,13 +153,26 @@ export async function clearExcludedQueueRanksForUser(
     for (const page of res.results) {
       if (cleared >= limit) break;
       const pagesClient = await notion.pages();
-      await pagesClient.update({
-        page_id: (page as any).id,
-        properties: {
-          'Queue Rank': { number: null }
+      try {
+        await pagesClient.update({ page_id: (page as any).id, properties: { 'Queue Rank': { number: null } } });
+        cleared++;
+      } catch (e: any) {
+        const msg: string = e?.message || '';
+        const code: string | undefined = e?.code;
+        if (code === 'validation_error' && msg.includes('archived')) {
+          console.warn(`⚠️ Skipping excluded clear on archived page ${(page as any).id}`);
+        } else if (code === 'conflict_error') {
+          try {
+            await sleep(150);
+            await pagesClient.update({ page_id: (page as any).id, properties: { 'Queue Rank': { number: null } } });
+            cleared++;
+          } catch {
+            console.warn(`⚠️ Conflict clearing excluded rank on ${(page as any).id} – giving up`);
+          }
+        } else {
+          console.warn(`⚠️ Failed clearing excluded rank on ${(page as any).id}:`, e);
         }
-      });
-      cleared++;
+      }
     }
 
     cursor = (res as any).has_more && (res as any).next_cursor ? (res as any).next_cursor : undefined;
@@ -182,29 +200,41 @@ export async function updateQueueRanksSurgically(
     }
 
     const pagesClient = await notion.pages();
-    await pagesClient.update({
-      page_id: task.pageId,
-      properties: {
-        'Queue Rank': {
-          number: task.queue_rank
-        },
-        'Projected Completion': {
-          date: {
-            start: task['Projected Completion']
+    let attempt = 0;
+    while (attempt < 3) {
+      try {
+        await pagesClient.update({
+          page_id: task.pageId,
+          properties: {
+            'Queue Rank': { number: task.queue_rank },
+            'Projected Completion': { date: { start: task['Projected Completion'] } }
           }
+        });
+        try {
+          const updated = await pagesClient.retrieve({ page_id: task.pageId });
+          const updatedProps: any = (updated as any).properties ?? {};
+          const verifiedDate: string | undefined = updatedProps['Projected Completion']?.date?.start;
+          const verifiedRank: number | null | undefined = updatedProps['Queue Rank']?.number;
+          console.log(`🔎 Verified page ${task.pageId}: Projected Completion=${verifiedDate ?? 'undefined'}, Queue Rank=${verifiedRank ?? 'undefined'}`);
+        } catch {
+          console.warn(`⚠️ Verification failed for page ${task.pageId}`);
         }
+        break;
+      } catch (e: any) {
+        const msg: string = e?.message || '';
+        const code: string | undefined = e?.code;
+        if (code === 'validation_error' && msg.includes('archived')) {
+          console.warn(`⚠️ Skipping archived page ${task.pageId} (${task.Name})`);
+          break;
+        }
+        if (code === 'conflict_error') {
+          attempt++;
+          await sleep(150 * attempt);
+          continue;
+        }
+        console.error(`❌ Update failed for ${task.pageId} (${task.Name}):`, e);
+        break;
       }
-    });
-
-    // Post-update verification (best-effort)
-    try {
-      const updated = await pagesClient.retrieve({ page_id: task.pageId });
-      const updatedProps: any = (updated as any).properties ?? {};
-      const verifiedDate: string | undefined = updatedProps['Projected Completion']?.date?.start;
-      const verifiedRank: number | null | undefined = updatedProps['Queue Rank']?.number;
-      console.log(`🔎 Verified page ${task.pageId}: Projected Completion=${verifiedDate ?? 'undefined'}, Queue Rank=${verifiedRank ?? 'undefined'}`);
-    } catch (e) {
-      console.warn(`⚠️ Verification failed for page ${task.pageId}`);
     }
   }
   console.log(`✅ Set queue ranks for ${processedTasks.length} tasks`);
@@ -258,15 +288,26 @@ export async function updateQueueRanksSurgically(
       // Only clear if this task is NOT in our processed tasks
       if (!processedTaskIds.has(page.id)) {
         const pagesClient = await notion.pages();
-        await pagesClient.update({
-          page_id: page.id,
-          properties: {
-            'Queue Rank': {
-              number: null
+        try {
+          await pagesClient.update({ page_id: page.id, properties: { 'Queue Rank': { number: null } } });
+          clearedCount++;
+        } catch (e: any) {
+          const msg: string = e?.message || '';
+          const code: string | undefined = e?.code;
+          if (code === 'validation_error' && msg.includes('archived')) {
+            console.warn(`⚠️ Skipping clear on archived page ${page.id}`);
+          } else if (code === 'conflict_error') {
+            try {
+              await sleep(150);
+              await pagesClient.update({ page_id: page.id, properties: { 'Queue Rank': { number: null } } });
+              clearedCount++;
+            } catch {
+              console.warn(`⚠️ Conflict clearing rank on ${page.id} – giving up`);
             }
+          } else {
+            console.warn(`⚠️ Failed clearing rank on ${page.id}:`, e);
           }
-        });
-        clearedCount++;
+        }
       }
     }
     
