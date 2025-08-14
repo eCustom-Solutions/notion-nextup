@@ -1,4 +1,6 @@
 import { Task, ProcessedTask, EXCLUDED_STATUSES, PRIORITY_MAP } from './types';
+import { USE_INTRADAY, WORKDAY_START_HOUR, WORKDAY_END_HOUR } from '../webhook/config';
+import { addBusinessHours, daysToHours } from '../utils/intraday';
 
 /**
  * Core business logic for Notion NextUp task processing
@@ -161,15 +163,23 @@ export function calculateQueueRank(tasks: Task[]): ProcessedTask[] {
     
     // Calculate queue rank and projected completion dates
     let businessDaysSoFar = 0;
+    let cursorTime: Date | null = null;
     for (let i = 0; i < sortedTasks.length; i++) {
       const task = sortedTasks[i];
       const estimatedDaysRemaining = task['Estimated Days Remaining'] || task['Estimated Days'] || 0;
-      businessDaysSoFar += estimatedDaysRemaining;
-      
-      // Calculate completion date for all tasks (use today as fallback if no Task Started Date)
-      const startDate = task['Task Started Date'] ? new Date(task['Task Started Date']) : new Date();
-      const completionDate = calculateBusinessDaysFrom(startDate, businessDaysSoFar);
-      const projectedCompletion = completionDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+      let projectedCompletion: string;
+      if (USE_INTRADAY) {
+        const startDate = task['Task Started Date'] ? new Date(task['Task Started Date']) : new Date();
+        const anchor = cursorTime ? new Date(Math.max(cursorTime.getTime(), startDate.getTime())) : startDate;
+        const completion = addBusinessHours(anchor, daysToHours(estimatedDaysRemaining, WORKDAY_START_HOUR, WORKDAY_END_HOUR));
+        cursorTime = completion;
+        projectedCompletion = completion.toISOString().split('T')[0];
+      } else {
+        businessDaysSoFar += estimatedDaysRemaining;
+        const startDate = task['Task Started Date'] ? new Date(task['Task Started Date']) : new Date();
+        const completionDate = calculateBusinessDaysFrom(startDate, businessDaysSoFar);
+        projectedCompletion = completionDate.toISOString().split('T')[0];
+      }
       
       const processedTask: ProcessedTask = {
         ...task,

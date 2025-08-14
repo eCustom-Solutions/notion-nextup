@@ -15,6 +15,7 @@ A TypeScript CLI tool that processes Notion databases and creates ranked task qu
   - Higher importance values first (1-100 scale)
   - Original CSV order as tiebreaker
 - **Projection Calculation**: Computes Projected Completion dates using business days from `Task Started Date` and `Estimated Days Remaining` (falls back to `Estimated Days` if missing)
+- **Intraday Precision**: Handles decimal estimated days with 8 AM - 4 PM workday boundaries, weekend rollovers, and timezone-aware calculations
 - **Surgical Updates**: Updates only tasks that need changes (no unnecessary operations)
 - **Database-Level Filtering**: Optimized performance with Notion's native filtering
 - **User UUID Lookup**: Automatic user name to UUID mapping for precise filtering

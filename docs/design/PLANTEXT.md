@@ -248,6 +248,11 @@ async function notionCall<T>(fn: () => Promise<T>): Promise<T> {
 - [x] Updated webhook handler to extract user and route to per-user debounce
   - `src/webhook/http/prod-server.ts` and `src/webhook/http/demo-server.ts` now delegate to `startScheduler(...).routeEvent(...)`
 - [ ] Observability: queue depth, processing time, token waits, 429s
+- [x] Intraday precision for projected completion dates
+  - Implemented decimal day handling with 8 AM - 4 PM workday boundaries
+  - Added config knobs for workday hours and timezone (defaults to Pacific)
+  - Integrated into core queue ranking logic with `USE_INTRADAY` flag (defaults to true)
+  - Comprehensive test suite validates edge cases and boundary conditions
 - [x] Config knobs and sane defaults
   - Added `GLOBAL_RPS` and `TOKEN_BUCKET_CAPACITY` to `src/webhook/config.ts` (client currently uses defaults; see next steps)
 - [x] Demo + production server wired to new scheduler

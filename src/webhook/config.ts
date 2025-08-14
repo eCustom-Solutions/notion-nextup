@@ -23,3 +23,15 @@ export const DEMO_USER_NAME: string | undefined = process.env.DEMO_USER_NAME ?? 
 
 // Objectives database (optional) for objective→tasks fanout
 export const OBJECTIVES_DB_ID: string | undefined = process.env.OBJECTIVES_DB_ID;
+
+// Intraday projection knobs
+export const USE_INTRADAY: boolean = String(process.env.USE_INTRADAY ?? 'true') === 'true';
+export const WORKDAY_START_HOUR: number = Number(process.env.WORKDAY_START_HOUR ?? 8);
+export const WORKDAY_END_HOUR: number = Number(process.env.WORKDAY_END_HOUR ?? 16);
+export const TIMEZONE: string = process.env.TIMEZONE ?? 'America/Los_Angeles';
+
+if (Number.isNaN(WORKDAY_START_HOUR) || Number.isNaN(WORKDAY_END_HOUR) || WORKDAY_END_HOUR <= WORKDAY_START_HOUR || WORKDAY_START_HOUR < 0 || WORKDAY_END_HOUR > 24) {
+  console.warn('[config] Invalid workday hours; falling back to 08:00–16:00');
+  (global as any).__WORKDAY_START_HOUR = 8;
+  (global as any).__WORKDAY_END_HOUR = 16;
+}
