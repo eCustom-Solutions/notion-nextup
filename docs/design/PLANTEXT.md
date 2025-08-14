@@ -91,6 +91,8 @@ Debounce parameters:
 ### 11) Error Handling & Backoff
 - 429/Retry-After: Respect header; sleep + optionally increase debounceMs briefly
 - Transient errors: retry with capped exponential backoff (e.g., 250ms → 1s → 2s; max 3 tries)
+- Conflict (409): per-page short retry with backoff; continue run on failure
+- Archived pages: skip updates/clears on archived pages and continue (log-only)
 - Permanent errors: log and drop; do not poison the queue
 - If processing crashes mid-user, ensure user’s `isProcessing=false` on recovery and optionally requeue
 

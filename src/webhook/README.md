@@ -54,6 +54,7 @@ Set via environment variables (see `src/webhook/config.ts`):
 Notes:
 - `Projected Completion` is written as a Notion date; `Estimated Days Remaining` is preferred for timeline math and falls back to `Estimated Days`.
 - Temporarily, queue score equals `Importance Rollup` (1–100) while weighting is evaluated.
+- Writes are resilient: archived pages are skipped; conflicts (409) are retried per page with a short backoff; runs continue.
 
 ## Endpoints
 

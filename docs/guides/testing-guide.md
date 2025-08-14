@@ -55,6 +55,19 @@ npm run start:demo      # demo
 
 Note: Live runs also clear any lingering `Queue Rank` on excluded-status tasks for the processed users.
 
+### **6. Simulate Mid-Workflow Errors (Harness-only)**
+```bash
+# Simulate archived validation_error on specific page IDs and a one-time conflict (409)
+SIMULATE_ARCHIVED_PAGE_IDS="page_id_1,page_id_2" \
+SIMULATE_CONFLICT_PAGE_IDS="page_id_3" \
+ENABLE_DATABASE_UPDATES=true CONFIRM_LIVE=ALL_USERS \
+USERS_INCLUDE_UUIDS="user_uuid" \
+npx ts-node src/webhook/tests/test-server.ts
+```
+The harness will:
+- Skip simulated archived pages (log-only)
+- Retry conflicts once with backoff, then continue
+
 ### **5. Scheduler Simulation (No HTTP, No Notion)**
 ```bash
 npx ts-node src/webhook/tests/scheduler-sim.ts
