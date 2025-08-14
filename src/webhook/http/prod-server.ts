@@ -104,5 +104,23 @@ app.post('/notion-webhook', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Webhook server listening on port ${PORT}`);
+  // Attempt to read current commit hash for observability
+  let commit = 'unknown';
+  try {
+    const headPath = path.resolve(process.cwd(), '.git/HEAD');
+    if (fs.existsSync(headPath)) {
+      const head = fs.readFileSync(headPath, 'utf8').trim();
+      const match = head.match(/ref:\s*(.*)/);
+      if (match) {
+        const refPath = path.resolve(process.cwd(), '.git', match[1]);
+        if (fs.existsSync(refPath)) {
+          commit = fs.readFileSync(refPath, 'utf8').trim().slice(0, 12);
+        }
+      } else {
+        commit = head.slice(0, 12);
+      }
+    }
+  } catch {}
+  console.log(`Webhook server listening on port ${PORT} • commit=${commit}`);
+  console.log(`Objective fanout: ${OBJECTIVES_DB_ID ? 'ENABLED' : 'DISABLED'} • OBJECTIVES_DB_ID=${OBJECTIVES_DB_ID || 'n/a'} • debounceMs=${DEBOUNCE_MS}`);
 });
