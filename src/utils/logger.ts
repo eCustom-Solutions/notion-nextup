@@ -18,15 +18,15 @@ try {
   // ignore mkdir errors on restricted environments
 }
 
+const prettyOrStdout = LOG_PRETTY ? pretty({ colorize: true, singleLine: true, translateTime: 'SYS:HH:MM:ss.l', ignore: 'pid,env,commit,hostname' }) : process.stdout;
+
 const fileStream = (() => {
   try {
-    return fs.createWriteStream(LOG_FILE, { flags: 'a' });
+    return pretty({ colorize: false, singleLine: true, translateTime: 'SYS:HH:MM:ss.l', ignore: 'pid,env,commit,hostname' });
   } catch {
-    return fs.createWriteStream(path.resolve(process.cwd(), 'app.log'), { flags: 'a' });
+    return pretty({ colorize: false, singleLine: true, translateTime: 'SYS:HH:MM:ss.l', ignore: 'pid,env,commit,hostname' });
   }
 })();
-
-const prettyOrStdout = LOG_PRETTY ? pretty({ colorize: true, singleLine: true, translateTime: 'SYS:HH:MM:ss.l', ignore: 'pid,env,commit,hostname' }) : process.stdout;
 
 export const log = pino(
   {
