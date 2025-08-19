@@ -1,9 +1,9 @@
 #!/usr/bin/env ts-node
 
-// Initialize structured logging & env first
-import '../../utils/logger';
+// Load env first, then initialize structured logging
 import * as dotenv from 'dotenv';
 dotenv.config();
+import '../../utils/logger';
 
 import { createBaseApp } from '../http/base-server';
 import { startScheduler } from '../scheduler';

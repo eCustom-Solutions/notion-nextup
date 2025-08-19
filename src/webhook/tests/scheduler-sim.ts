@@ -1,7 +1,7 @@
-// Initialize structured logging & env first
-import '../../utils/logger';
+// Load env first, then initialize structured logging
 import * as dotenv from 'dotenv';
 dotenv.config();
+import '../../utils/logger';
 
 import { startScheduler } from '../scheduler';
 

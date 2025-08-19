@@ -26,7 +26,7 @@ const fileStream = (() => {
   }
 })();
 
-const prettyOrStdout = LOG_PRETTY ? pretty({ colorize: true }) : process.stdout;
+const prettyOrStdout = LOG_PRETTY ? pretty({ colorize: true, singleLine: true, translateTime: 'SYS:HH:MM:ss.l', ignore: 'pid,env,commit,hostname' }) : process.stdout;
 
 export const log = pino(
   {

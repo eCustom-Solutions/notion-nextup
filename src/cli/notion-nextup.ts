@@ -1,10 +1,10 @@
 #!/usr/bin/env ts-node
 
-// Initialize structured logging & env first
-import '../utils/logger';
+// Load env first, then initialize structured logging
 import * as dotenv from 'dotenv';
 // Load environment variables from .env file
 dotenv.config();
+import '../utils/logger';
 import { calculateQueueRank } from '../core/queue-ranking';
 import { loadTasks, updateQueueRanksSurgically } from '../api/notion-adapter';
 
