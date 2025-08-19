@@ -2,7 +2,6 @@ import pino from 'pino';
 import fs from 'fs';
 import path from 'path';
 import pretty from 'pino-pretty';
-import { Transform } from 'stream';
 
 const LOG_LEVEL = process.env.LOG_LEVEL ?? 'info';
 const LOG_FILE = process.env.LOG_FILE ?? '/var/log/notion-nextup/app.log';
@@ -21,31 +20,13 @@ try {
 
 const prettyOrStdout = LOG_PRETTY ? pretty({ colorize: true, singleLine: true, translateTime: 'SYS:HH:MM:ss.l', ignore: 'pid,env,commit,hostname' }) : process.stdout;
 
-// Create a transform stream that converts JSON to pretty format
-const prettyTransform = new Transform({
-  transform(chunk, encoding, callback) {
-    try {
-      const json = JSON.parse(chunk.toString());
-      const prettyLine = `[${new Date(json.time).toLocaleTimeString('en-US', { 
-        hour12: false, 
-        hour: '2-digit', 
-        minute: '2-digit', 
-        second: '2-digit',
-        fractionalSecondDigits: 3 
-      })}] ${json.level === 30 ? 'INFO' : json.level === 40 ? 'WARN' : json.level === 50 ? 'ERROR' : 'DEBUG'}: ${json.msg}\n`;
-      callback(null, prettyLine);
-    } catch (err) {
-      // If parsing fails, just pass through the chunk
-      callback(null, chunk);
-    }
-  }
-});
-
 const fileStream = (() => {
   try {
-    return prettyTransform.pipe(fs.createWriteStream(LOG_FILE, { flags: 'a' }));
+    const prettyFormatter = pretty({ colorize: false, singleLine: true, translateTime: 'SYS:HH:MM:ss.l', ignore: 'pid,env,commit,hostname' });
+    return prettyFormatter.pipe(fs.createWriteStream(LOG_FILE, { flags: 'a' }));
   } catch {
-    return prettyTransform.pipe(fs.createWriteStream(path.resolve(process.cwd(), 'app.log'), { flags: 'a' }));
+    const prettyFormatter = pretty({ colorize: false, singleLine: true, translateTime: 'SYS:HH:MM:ss.l', ignore: 'pid,env,commit,hostname' });
+    return prettyFormatter.pipe(fs.createWriteStream(path.resolve(process.cwd(), 'app.log'), { flags: 'a' }));
   }
 })();
 
