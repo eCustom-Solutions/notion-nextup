@@ -1,3 +1,5 @@
+// Initialize structured logging & env first
+import '../../utils/logger';
 import * as dotenv from 'dotenv';
 dotenv.config();
 

@@ -1,7 +1,8 @@
 #!/usr/bin/env ts-node
 
+// Initialize structured logging & env first
+import '../utils/logger';
 import * as dotenv from 'dotenv';
-
 // Load environment variables from .env file
 dotenv.config();
 import { calculateQueueRank } from '../core/queue-ranking';
