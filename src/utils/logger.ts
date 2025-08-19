@@ -22,9 +22,11 @@ const prettyOrStdout = LOG_PRETTY ? pretty({ colorize: true, singleLine: true, t
 
 const fileStream = (() => {
   try {
-    return pretty({ colorize: false, singleLine: true, translateTime: 'SYS:HH:MM:ss.l', ignore: 'pid,env,commit,hostname' });
+    const prettyFormatter = pretty({ colorize: false, singleLine: true, translateTime: 'SYS:HH:MM:ss.l', ignore: 'pid,env,commit,hostname' });
+    return prettyFormatter.pipe(fs.createWriteStream(LOG_FILE, { flags: 'a' }));
   } catch {
-    return pretty({ colorize: false, singleLine: true, translateTime: 'SYS:HH:MM:ss.l', ignore: 'pid,env,commit,hostname' });
+    const prettyFormatter = pretty({ colorize: false, singleLine: true, translateTime: 'SYS:HH:MM:ss.l', ignore: 'pid,env,commit,hostname' });
+    return prettyFormatter.pipe(fs.createWriteStream(path.resolve(process.cwd(), 'app.log'), { flags: 'a' }));
   }
 })();
 
