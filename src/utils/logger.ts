@@ -24,7 +24,7 @@ const prettyOrStdout = LOG_PRETTY
   ? pretty({
       colorize: true,
       singleLine: true,
-      translateTime: 'SYS:yyyy-MM-dd HH:mm:ss.l',
+      translateTime: 'SYS:yyyy-mm-dd HH:MM:ss.l',
       ignore: 'pid,env,commit,hostname',
     })
   : process.stdout;
