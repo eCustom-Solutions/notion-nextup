@@ -19,20 +19,25 @@ try {
   // ignore mkdir errors on restricted environments
 }
 
-const prettyOrStdout = LOG_PRETTY ? pretty({ colorize: true, singleLine: true, translateTime: 'SYS:HH:MM:ss.l', ignore: 'pid,env,commit,hostname' }) : process.stdout;
+// Include date in console output (YYYY-MM-DD HH:MM:SS.mmm)
+const prettyOrStdout = LOG_PRETTY
+  ? pretty({
+      colorize: true,
+      singleLine: true,
+      translateTime: 'SYS:yyyy-MM-dd HH:mm:ss.l',
+      ignore: 'pid,env,commit,hostname',
+    })
+  : process.stdout;
 
 // Create a transform stream that converts JSON to pretty format
 const prettyTransform = new Transform({
   transform(chunk, encoding, callback) {
     try {
       const json = JSON.parse(chunk.toString());
-      const prettyLine = `[${new Date(json.time).toLocaleTimeString('en-US', { 
-        hour12: false, 
-        hour: '2-digit', 
-        minute: '2-digit', 
-        second: '2-digit',
-        fractionalSecondDigits: 3 
-      })}] ${json.level === 30 ? 'INFO' : json.level === 40 ? 'WARN' : json.level === 50 ? 'ERROR' : 'DEBUG'}: ${json.msg}\n`;
+      const iso = new Date(json.time).toISOString();
+      // iso example: 2025-08-19T15:44:16.472Z -> we want 2025-08-19 15:44:16.472
+      const ts = iso.replace('T', ' ').replace('Z', '').slice(0, 23);
+      const prettyLine = `[${ts}] ${json.level === 30 ? 'INFO' : json.level === 40 ? 'WARN' : json.level === 50 ? 'ERROR' : 'DEBUG'}: ${json.msg}\n`;
       callback(null, prettyLine);
     } catch (err) {
       // If parsing fails, just pass through the chunk
