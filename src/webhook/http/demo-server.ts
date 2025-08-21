@@ -7,6 +7,7 @@ import '../../utils/logger';
 
 import { createBaseApp } from './base-server';
 import { PORT, DEBOUNCE_MS, DEMO_USER_ID, DEMO_USER_NAME, OBJECTIVES_DB_ID } from '../config';
+import { routeAssignees } from '../assignee-router';
 import { startScheduler } from '../scheduler';
 
 const app = createBaseApp();
@@ -14,22 +15,18 @@ const app = createBaseApp();
 const scheduler = startScheduler({ debounceMs: DEBOUNCE_MS, enableLogging: true });
 
 app.post('/notion-webhook', async (req, res) => {
-  const assignee = req.body?.data?.properties?.Assignee?.people?.[0];
-  const assigneeId = assignee?.id;
-  const assigneeName = assignee?.name;
-  const parentDb = req.body?.data?.parent?.database_id as string | undefined;
+  const people = req.body?.data?.properties?.Assignee?.people || [];
 
-  if (OBJECTIVES_DB_ID && parentDb === OBJECTIVES_DB_ID) {
-    console.log(`🎯 Objective event received (demo) for page ${req.body?.data?.id} in DB ${parentDb}`);
-    return res.status(200).send('accepted - objective event logged');
-  }
-
-  if (assigneeId === DEMO_USER_ID && assigneeName === DEMO_USER_NAME) {
-    scheduler.routeEvent(assigneeId, assigneeName);
+  // In demo mode we only process events if Derious is one of the assignees
+  const hasDemoUser = people.some((p: any) => p?.id === DEMO_USER_ID);
+  if (hasDemoUser) {
+    // Enqueue only Derious—even if others are present—to maintain demo safety
+    scheduler.routeEvent(DEMO_USER_ID!, DEMO_USER_NAME!);
     res.status(200).send('accepted - demo user processed');
   } else {
     res.status(202).send('accepted - demo user only');
   }
+  return;
 });
 
 app.listen(PORT, () => {

@@ -6,6 +6,7 @@ dotenv.config();
 import '../../utils/logger';
 
 import { startScheduler } from '../scheduler';
+import { routeAssignees } from '../assignee-router';
 import fs from 'fs';
 import path from 'path';
 import { getAllUsers } from '../../api/user-lookup';
@@ -72,6 +73,56 @@ async function runAllUsersHarness() {
   const dbId = process.env.NOTION_DB_ID;
   if (!dbId) {
     throw new Error('NOTION_DB_ID missing in env');
+  }
+
+  // -------------------------------------------------------------
+  // Optional: Multi-assignee webhook simulation mode
+  // If MULTI_ASSIGNEE_PAYLOAD is set (format: id1:name1,id2:name2,...)
+  // we bypass the all-users harness and instead fire a single webhook-like
+  // payload through routeAssignees to validate fan-out behaviour end-to-end.
+  // -------------------------------------------------------------
+  const multiPayloadRaw = process.env.MULTI_ASSIGNEE_PAYLOAD;
+  if (multiPayloadRaw) {
+    console.log('🧪 Multi-assignee simulation mode enabled');
+    const pairs = multiPayloadRaw.split(',').map(s => s.trim()).filter(Boolean);
+    const people = pairs.map(pair => {
+      const [id, ...nameParts] = pair.split(':');
+      return { id, name: nameParts.join(':') || id };
+    });
+
+    console.log('👥 Simulated people:', people);
+
+    const completed = new Set<string>();
+    const scheduler = startScheduler({
+      debounceMs: DEBOUNCE_MS,
+      enableLogging: true,
+      processUser: async (userId: string, userName: string) => {
+        await invokePipeline(userId, userName);
+        completed.add(userId);
+      },
+    });
+
+    // Build fake webhook payload and fan-out
+    const payload = {
+      data: {
+        properties: {
+          Assignee: { people },
+        },
+      },
+    };
+
+    const count = routeAssignees(payload, scheduler as any);
+    console.log(`📨 routeAssignees enqueued ${count} users`);
+
+    // Wait for all processing to complete (simple timeout 5m)
+    const deadline = Date.now() + 5 * 60 * 1000;
+    while (completed.size < people.length && Date.now() < deadline) {
+      await sleep(100);
+    }
+
+    scheduler.stop();
+    console.log(`✅ Multi-assignee simulation completed: processed ${completed.size}/${people.length} users`);
+    return;
   }
 
   const dryRun = String(process.env.ENABLE_DATABASE_UPDATES ?? 'false') !== 'true';
@@ -164,7 +215,10 @@ async function runAllUsersHarness() {
   }
 
   // Wait for all to complete (each user processed at least once)
-  const deadlineMs = Date.now() + Math.max(60_000, selected.length * 5_000); // scale with users
+  const timeoutMinutes = Number(process.env.TIMEOUT_MINUTES ?? '10'); // default 10 minutes
+  const deadlineMs = Date.now() + (timeoutMinutes * 60 * 1000);
+  console.log(`⏰ Timeout set to ${timeoutMinutes} minutes (${deadlineMs - Date.now()}ms)`);
+  
   while (completed.size < selected.length && Date.now() < deadlineMs) {
     await sleep(200);
   }

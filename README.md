@@ -6,6 +6,7 @@ A TypeScript CLI tool that processes Notion databases and creates ranked task qu
 
 - **Notion API Integration**: Direct integration with Notion databases for real-time processing
 - **Webhook Server**: Express.js webhook server for real-time Notion updates
+- **Multi-Assignee Support**: Tasks with multiple assignees now trigger queue rebuilds for all assignees
 - **Per-User Scheduler**: Debounce per user, FCFS global queue, single worker with fairness
 - **Task Filtering**: Excludes ineligible tasks based on status and ownership
 - **Queue Ranking**: Calculates deterministic task order per person using:
@@ -139,6 +140,7 @@ notion-nextup/
 │   ├── webhook/            # Webhook servers, scheduler, runtime
 │   │   ├── config.ts       # Centralized config (PORT, debounce, logging, globals)
 │   │   ├── types.ts        # Webhook types
+│   │   ├── assignee-router.ts # Helper to route all assignees from webhook payloads
 │   │   ├── scheduler/      # Per-user debounce + global FIFO + single worker
 │   │   ├── notion-pipeline.ts # Pure pipeline to process one user
 │   │   ├── http/
@@ -149,6 +151,7 @@ notion-nextup/
 │   │   │   └── invoke-pipeline.ts # Wrapper to call pipeline
 │   │   ├── tests/
 │   │   │   ├── test-server.ts    # Scheduler-backed local harness
+│   │   │   ├── assignee-router.test.ts # Unit tests for multi-assignee routing
 │   │   │   └── scheduler-sim.ts  # No-HTTP, no-Notion scheduling simulation
 │   │   └── README.md
 │   ├── utils/              # Utilities & debugging

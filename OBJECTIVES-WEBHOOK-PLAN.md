@@ -2,8 +2,15 @@
 
 ## Context
 - Current server processes task-page webhooks only when `Assignee` is present; events without an assignee are accepted but ignored.
+- **NEW**: Server now processes **all assignees** when multiple people are assigned to a task (multi-assignee fan-out).
 - Notion automations cannot trigger directly on a Rollup change (e.g., `Importance Rollup`) in Tasks.
-- Desired behavior: when an Objective's source property (feeding the rollup) changes, trigger recomputation for all related Tasks’ assignees.
+- Desired behavior: when an Objective's source property (feeding the rollup) changes, trigger recomputation for all related Tasks' assignees.
+
+## Recent Improvements (✅ Completed)
+- **Multi-assignee support**: Tasks with multiple assignees now trigger queue rebuilds for all assignees, not just the first one.
+- **Shared logic**: `assignee-router.ts` helper extracts all assignees from webhook payloads and routes them to the scheduler.
+- **Test coverage**: Unit tests and integration tests validate multi-assignee functionality.
+- **Production ready**: Both prod and demo servers now handle multi-assignee scenarios correctly.
 
 ## Problem
 - Objective updates land as webhooks for Objective pages (different database).

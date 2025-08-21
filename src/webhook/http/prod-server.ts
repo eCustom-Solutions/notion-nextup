@@ -9,6 +9,7 @@ import fs from 'fs';
 import path from 'path';
 import { createBaseApp } from './base-server';
 import { PORT, DEBOUNCE_MS, OBJECTIVES_DB_ID } from '../config';
+import { routeAssignees } from '../assignee-router';
 import { startScheduler } from '../scheduler';
 import { getAssigneesForObjective } from '../../api/objective-fanout';
 
@@ -71,9 +72,6 @@ app.post('/notion-webhook', async (req, res) => {
   const webhookType = req.body?.data?.properties ? 'with-properties' : 'no-properties';
   console.log(`📨 Webhook received: id=${webhookId}, db=${webhookDb}, type=${webhookType}`);
 
-  const assignee = req.body?.data?.properties?.Assignee?.people?.[0];
-  const assigneeId = assignee?.id;
-  const assigneeName = assignee?.name;
   const parentDb = req.body?.data?.parent?.database_id as string | undefined;
 
   if (OBJECTIVES_DB_ID && parentDb && normalizeNotionId(parentDb) === normalizeNotionId(OBJECTIVES_DB_ID)) {
@@ -103,6 +101,19 @@ app.post('/notion-webhook', async (req, res) => {
       return res.status(202).send('accepted - objective fanout error (logged)');
     }
   }
+
+  // Fan-out to all assignees using shared helper
+  const enqueued = routeAssignees(req.body, scheduler, includeUUIDs);
+
+  if (enqueued > 0) {
+    res.status(202).send(`accepted - enqueued ${enqueued} assignees`);
+    return;
+  }
+
+  // Legacy single-assignee fallback (should rarely hit)
+  const assignee = req.body?.data?.properties?.Assignee?.people?.[0];
+  const assigneeId = assignee?.id;
+  const assigneeName = assignee?.name;
 
   if (assigneeId && assigneeName) {
     if (includeUUIDs.size > 0 && !includeUUIDs.has(assigneeId)) {
