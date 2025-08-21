@@ -166,7 +166,10 @@ export function calculateQueueRank(tasks: Task[]): ProcessedTask[] {
     let cursorTime: Date | null = null;
     for (let i = 0; i < sortedTasks.length; i++) {
       const task = sortedTasks[i];
-      const estimatedDaysRemaining = task['Estimated Days Remaining'] || task['Estimated Days'] || 0;
+      const rawEstRemaining = task['Estimated Days Remaining'];
+      const rawEstDays = task['Estimated Days'];
+      // Treat undefined/blank as 0 for calculations
+      const estimatedDaysRemaining = rawEstRemaining ?? rawEstDays ?? 0;
       let projectedCompletion: string;
       if (USE_INTRADAY) {
         const startDate = task['Task Started Date'] ? new Date(task['Task Started Date']) : new Date();
@@ -181,6 +184,14 @@ export function calculateQueueRank(tasks: Task[]): ProcessedTask[] {
         projectedCompletion = completionDate.toISOString().split('T')[0];
       }
       
+      // Special-case: if this is the first task in the queue **and** its estimate is 0/empty,
+      // set Projected Completion to today (or next business day if today is a weekend).
+      if (i === 0 && (!rawEstRemaining && !rawEstDays || estimatedDaysRemaining === 0)) {
+        const today = new Date();
+        const todayAdj = calculateBusinessDaysFrom(today, 0); // adjusts weekend → Monday
+        projectedCompletion = todayAdj.toISOString().split('T')[0];
+      }
+
       const processedTask: ProcessedTask = {
         ...task,
         queue_rank: i + 1,
