@@ -78,6 +78,14 @@ app.post('/notion-webhook', async (req, res) => {
     : 'none';
   console.log(`📨 Webhook received: id=${webhookId}, db=${webhookDb}, type=${webhookType}, authors=[${authorSummary}]`);
 
+  // DEBUG: dump the raw payload (stringified, truncated to 2k chars to avoid log spam)
+  try {
+    const raw = JSON.stringify(req.body).slice(0, 2048);
+    console.log('🔎 Raw webhook payload (truncated 2k):', raw);
+  } catch {
+    console.log('🔎 Raw webhook payload could not be stringified');
+  }
+
   const parentDb = req.body?.data?.parent?.database_id as string | undefined;
 
   if (OBJECTIVES_DB_ID && parentDb && normalizeNotionId(parentDb) === normalizeNotionId(OBJECTIVES_DB_ID)) {
