@@ -7,11 +7,26 @@ import { Scheduler } from './scheduler';
  *
  * @returns the number of assignees enqueued
  */
+// Helper: determine if webhook was triggered by at least one human author
+function isHumanTriggered(payload: unknown): boolean {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const authors = (payload as any)?.authors as Array<{ id?: string; type?: string }> | undefined;
+  if (!authors || authors.length === 0) return true; // default: treat as human if unknown
+  return authors.some(a => a?.type === 'person');
+}
+
 export function routeAssignees(
   payload: unknown,
   scheduler: Scheduler,
   allowlist?: Set<string>
 ): number {
+  // Ignore events triggered solely by bots/agents
+  if (!isHumanTriggered(payload)) {
+    /* eslint-disable no-console */
+    console.log(`🤖 Ignored webhook triggered by bot only id=${(payload as any)?.id ?? 'unknown'}`);
+    /* eslint-enable no-console */
+    return 0;
+  }
   // Notion webhook shape: payload.data.properties.Assignee.people is an array
   // of { id, name }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
