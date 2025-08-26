@@ -70,7 +70,13 @@ app.post('/notion-webhook', async (req, res) => {
   const webhookId = req.body?.data?.id || 'unknown';
   const webhookDb = req.body?.data?.parent?.database_id || 'unknown';
   const webhookType = req.body?.data?.properties ? 'with-properties' : 'no-properties';
-  console.log(`📨 Webhook received: id=${webhookId}, db=${webhookDb}, type=${webhookType}`);
+  // Log authors array (human vs bot diagnostics)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const authorsArr = (req.body as any)?.authors ?? [];
+  const authorSummary = Array.isArray(authorsArr) && authorsArr.length > 0
+    ? authorsArr.map((a: any) => `${a.type}:${(a.id ?? '').slice(0,8)}`).join(',')
+    : 'none';
+  console.log(`📨 Webhook received: id=${webhookId}, db=${webhookDb}, type=${webhookType}, authors=[${authorSummary}]`);
 
   const parentDb = req.body?.data?.parent?.database_id as string | undefined;
 
