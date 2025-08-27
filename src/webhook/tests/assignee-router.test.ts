@@ -24,7 +24,7 @@ function buildPayload(people: Array<{ id?: string; name?: string }>) {
 }
 
 // 1. Single assignee
-(() => {
+;(async () => {
   console.log('\n🧪 Test 1: Single assignee');
   const scheduler = new StubScheduler();
   const payload = buildPayload([{ id: 'u1', name: 'Alice' }]);
@@ -37,7 +37,7 @@ function buildPayload(people: Array<{ id?: string; name?: string }>) {
 })();
 
 // 2. Multiple assignees
-(() => {
+;(async () => {
   console.log('\n🧪 Test 2: Multiple assignees');
   const scheduler = new StubScheduler();
   const payload = buildPayload([
@@ -55,7 +55,7 @@ function buildPayload(people: Array<{ id?: string; name?: string }>) {
 })();
 
 // 3. Allowlist filtering
-(() => {
+;(async () => {
   console.log('\n🧪 Test 3: Allowlist filtering');
   const scheduler = new StubScheduler();
   const payload = buildPayload([
@@ -74,7 +74,7 @@ function buildPayload(people: Array<{ id?: string; name?: string }>) {
 })();
 
 // 4. No assignees
-(() => {
+;(async () => {
   console.log('\n🧪 Test 4: No assignees');
   const scheduler = new StubScheduler();
   const payload = buildPayload([]);

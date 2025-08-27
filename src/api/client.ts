@@ -46,6 +46,21 @@ class ThrottledNotionClient {
       }
     };
   }
+
+  async users() {
+    return {
+      retrieve: async (params: any) => {
+        await this.throttle();
+        // @ts-ignore
+        return this.client.users.retrieve(params);
+      },
+      me: async () => {
+        await this.throttle();
+        // @ts-ignore
+        return this.client.users.me();
+      }
+    };
+  }
 }
 
 // Export the throttled client
