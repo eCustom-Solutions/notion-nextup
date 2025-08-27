@@ -6,6 +6,7 @@ A TypeScript CLI tool that processes Notion databases and creates ranked task qu
 
 - **Notion API Integration**: Direct integration with Notion databases for real-time processing
 - **Webhook Server**: Express.js webhook server for real-time Notion updates
+- **Author Classification & Bot Filtering**: Skips events triggered by the integration itself or Notion Automations; behaviour controlled via `ALLOW_BOT_EVENTS` / `ALLOW_AUTOMATION_EVENTS`
 - **Multi-Assignee Support**: Tasks with multiple assignees now trigger queue rebuilds for all assignees
 - **Per-User Scheduler**: Debounce per user, FCFS global queue, single worker with fairness
 - **Task Filtering**: Excludes ineligible tasks based on status and ownership
@@ -40,6 +41,15 @@ npx ts-node src/cli/notion-nextup.ts --notion-db your-database-id
 ```bash
 npm run start:webhook
 ```
+
+### Deploying to EC2 (one-liner)
+
+```bash
+./scripts/deploy-ec2.sh            # deploy origin/main
+./scripts/deploy-ec2.sh <commit>   # deploy specific commit / branch / tag
+```
+
+The helper SSHes to the instance, pulls, builds and restarts `pm2` (see the script header for configurable env vars).
 
 ### Arguments (CLI Mode)
 

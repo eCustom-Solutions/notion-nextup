@@ -27,6 +27,15 @@ Research and planning documents:
 - **Testing**: Unit tests (`assignee-router.test.ts`) and integration tests validate functionality
 - **Production Ready**: Both production and demo servers handle multi-assignee scenarios
 
+### Author Classification & Bot Filtering (✅ Completed)
+- **New Feature**: Webhook server now classifies the event author (person, integration bot, automation) using Notion Users API
+- **Config Flags**: `ALLOW_BOT_EVENTS`, `ALLOW_AUTOMATION_EVENTS`
+- **Skip Logic**: Events triggered by the integration itself or automations are ignored by default
+
+### One-Line EC2 Deployment (✅ Completed)
+- **New Script**: `scripts/deploy-ec2.sh` automates SSH → pull → build → pm2 restart
+- **Guide**: See `docs/guides/deployment-guide.md` for usage and environment variables
+
 ## Quick Links
 
 - **Getting Started**: See `guides/testing-guide.md` for setup instructions
