@@ -49,14 +49,16 @@ export function shouldProcess(kind: AuthorKind): boolean {
 }
 
 export function logClassification(eventId: string, klass: Classification): void {
-  // eslint-disable-next-line no-console
-  console.log({
-    event_id: eventId,
-    actor_id: klass?.id,
-    classification: klass?.kind,
-    source: klass?.source,
-    reason: klass?.reason,
-  }, '👤 Author classification result');
+  if (process.env.DEBUG_AUTHORS === 'true') {
+    // eslint-disable-next-line no-console
+    console.log({
+      event_id: eventId,
+      actor_id: klass?.id,
+      classification: klass?.kind,
+      source: klass?.source,
+      reason: klass?.reason,
+    }, '👤 Author classification result');
+  }
 }
 
 export function logSkip(eventId: string, classification?: AuthorKind): void {
