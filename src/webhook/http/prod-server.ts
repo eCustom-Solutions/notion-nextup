@@ -80,7 +80,7 @@ app.post('/notion-webhook', async (req, res) => {
 
   // DEBUG: dump the raw payload (stringified, truncated to 2k chars to avoid log spam)
   try {
-    const raw = JSON.stringify(req.body).slice(0, 2048);
+    const raw = JSON.stringify(req.body.data).slice(0, 2048);
     console.log('🔎 Raw webhook payload (truncated 2k):', raw);
   } catch {
     console.log('🔎 Raw webhook payload could not be stringified');
