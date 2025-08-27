@@ -118,7 +118,7 @@ app.post('/notion-webhook', async (req, res) => {
   }
 
   // Fan-out to all assignees using shared helper
-  const enqueued = routeAssignees(req.body, scheduler, includeUUIDs);
+  const enqueued = await routeAssignees(req.body, scheduler, includeUUIDs);
 
   if (enqueued > 0) {
     res.status(202).send(`accepted - enqueued ${enqueued} assignees`);

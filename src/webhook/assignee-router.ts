@@ -1,4 +1,5 @@
 import { Scheduler } from './scheduler';
+import { classifyFromPage, shouldProcess, logClassification, logSkip } from './author-classifier';
 
 /**
  * Routes all assignees found in a Notion webhook payload to the scheduler.
@@ -15,22 +16,24 @@ function isHumanTriggered(payload: unknown): boolean {
   return authors.some(a => a?.type === 'person');
 }
 
-export function routeAssignees(
+export async function routeAssignees(
   payload: unknown,
   scheduler: Scheduler,
   allowlist?: Set<string>
-): number {
-  // Ignore events triggered solely by bots/agents
-  if (!isHumanTriggered(payload)) {
-    /* eslint-disable no-console */
-    console.log(`🤖 Ignored webhook triggered by bot only id=${(payload as any)?.id ?? 'unknown'}`);
-    /* eslint-enable no-console */
+): Promise<number> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const p: any = payload as any;
+  const pageLike = p?.data ?? p; // Automations send Page as body; tests may nest under data
+
+  const klass = await classifyFromPage(pageLike);
+  const eventId = p?.id ?? p?.request_id ?? pageLike?.id ?? 'unknown';
+  logClassification(eventId, klass);
+  if (!shouldProcess(klass.kind)) {
+    logSkip(eventId, klass.kind);
     return 0;
   }
-  // Notion webhook shape: payload.data.properties.Assignee.people is an array
-  // of { id, name }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const people = (payload as any)?.data?.properties?.Assignee?.people ?? [];
+
+  const people = pageLike?.properties?.Assignee?.people ?? p?.data?.properties?.Assignee?.people ?? [];
   let count = 0;
   for (const person of people) {
     const id: string | undefined = person?.id;
