@@ -1,6 +1,5 @@
-import { Task, ProcessedTask, EXCLUDED_STATUSES, PRIORITY_MAP } from './types';
-import { USE_INTRADAY, WORKDAY_START_HOUR, WORKDAY_END_HOUR } from '../webhook/config';
-import { addBusinessHours, daysToHours } from '../utils/intraday';
+import { Task, ProcessedTask, RankedTask, EXCLUDED_STATUSES, PRIORITY_MAP } from './types';
+import { assignProjections } from './projection-engine';
 
 /**
  * Core business logic for Notion NextUp task processing
@@ -161,50 +160,72 @@ export function calculateQueueRank(tasks: Task[]): ProcessedTask[] {
       console.log(`  ${index + 1}. "${task.Name}" (Score: ${score})`);
     });
     
-    // Calculate queue rank and projected completion dates
-    let businessDaysSoFar = 0;
-    let cursorTime: Date | null = null;
-    for (let i = 0; i < sortedTasks.length; i++) {
-      const task = sortedTasks[i];
-      const rawEstRemaining = task['Estimated Days Remaining'];
-      const rawEstDays = task['Estimated Days'];
-      // Treat undefined/blank as 0 for calculations
-      const estimatedDaysRemaining = rawEstRemaining ?? rawEstDays ?? 0;
-      let projectedCompletion: string;
-      if (USE_INTRADAY) {
-        const startDate = task['Task Started Date'] ? new Date(task['Task Started Date']) : new Date();
-        const anchor = cursorTime ? new Date(Math.max(cursorTime.getTime(), startDate.getTime())) : startDate;
-        const completion = addBusinessHours(anchor, daysToHours(estimatedDaysRemaining, WORKDAY_START_HOUR, WORKDAY_END_HOUR));
-        cursorTime = completion;
-        projectedCompletion = completion.toISOString().split('T')[0];
-      } else {
-        businessDaysSoFar += estimatedDaysRemaining;
-        const startDate = task['Task Started Date'] ? new Date(task['Task Started Date']) : new Date();
-        const completionDate = calculateBusinessDaysFrom(startDate, businessDaysSoFar);
-        projectedCompletion = completionDate.toISOString().split('T')[0];
-      }
-      
-      // Special-case: if this is the first task in the queue **and** its estimate is 0/empty,
-      // set Projected Completion to today (or next business day if today is a weekend).
-      if (i === 0 && (!rawEstRemaining && !rawEstDays || estimatedDaysRemaining === 0)) {
-        const today = new Date();
-        const todayAdj = calculateBusinessDaysFrom(today, 0); // adjusts weekend → Monday
-        projectedCompletion = todayAdj.toISOString().split('T')[0];
-      }
+    // Calculate queue ranks only; projections assigned in a separate pass
+    const ranked: RankedTask[] = sortedTasks.map((task, index) => ({
+      ...task,
+      queue_rank: index + 1,
+      queue_score: calculateQueueScore(task),
+    }));
 
-      const processedTask: ProcessedTask = {
-        ...task,
-        queue_rank: i + 1,
-        queue_score: calculateQueueScore(task),
-        'Projected Completion': projectedCompletion,
-        'Estimated Days Remaining': estimatedDaysRemaining,
-        pageId: task.pageId || ''
-      };
-      
-      processedTasks.push(processedTask);
-    }
+    // Note: assignProjections is async; for now, do a simple sync bridge by blocking via deasync pattern avoided.
+    // Adjust upstream to call async API. Here, we keep signature and will switch pipeline to async.
+    throw new Error('calculateQueueRank now requires async projection assignment. Use calculateQueueRankAsync.');
   }
   
+  return processedTasks;
+}
+
+export async function calculateQueueRankAsync(tasks: Task[]): Promise<ProcessedTask[]> {
+  const tasksByOwner = new Map<string, Task[]>();
+  for (const task of tasks) {
+    if (!isEligible(task)) continue;
+    const owner = task['Assignee'];
+    if (!tasksByOwner.has(owner)) tasksByOwner.set(owner, []);
+    tasksByOwner.get(owner)!.push(task);
+  }
+
+  const processedTasks: ProcessedTask[] = [];
+  const taskHierarchy = buildTaskHierarchy(tasks);
+
+  for (const [owner, ownerTasks] of tasksByOwner) {
+    console.log(`Processing tasks for: ${owner}`);
+    console.log(`📊 Processing ${ownerTasks.length} tasks for ${owner}`);
+
+    console.log('\n🧮 Calculating scores for each task:');
+    const tasksWithScores = ownerTasks.map(task => {
+      const score = calculateQueueScore(task);
+      console.log(`  "${task.Name}" - Score: ${score} (Priority: ${task['Priority']}, Due: ${task['Due']}, Est Days: ${task['Estimated Days']}, Importance: ${task['Importance Rollup'] || 0})`);
+      return { task, score };
+    });
+
+    console.log('\n📊 Sorting tasks by score...');
+    const sortedTasks = tasksWithScores
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        const aIsParent = taskHierarchy.get(a.task.Name)?.some(child => child.Name === b.task.Name);
+        const bIsParent = taskHierarchy.get(b.task.Name)?.some(child => child.Name === a.task.Name);
+        if (aIsParent) return -1;
+        if (bIsParent) return 1;
+        return tasks.indexOf(a.task) - tasks.indexOf(b.task);
+      })
+      .map(item => item.task);
+
+    console.log('\n📋 Final sorted order:');
+    sortedTasks.forEach((task, index) => {
+      const score = calculateQueueScore(task);
+      console.log(`  ${index + 1}. "${task.Name}" (Score: ${score})`);
+    });
+
+    const ranked: RankedTask[] = sortedTasks.map((task, index) => ({
+      ...task,
+      queue_rank: index + 1,
+      queue_score: calculateQueueScore(task),
+    }));
+
+    const withProjections = await assignProjections(ranked);
+    processedTasks.push(...withProjections);
+  }
+
   return processedTasks;
 }
 

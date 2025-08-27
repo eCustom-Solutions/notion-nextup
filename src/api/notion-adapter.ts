@@ -81,6 +81,34 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
       const taskStartedDate = props['Task Started Date']?.date?.start;
       const projectedCompletion = props['Projected Completion']?.date?.start;
 
+      // Read Labels and Objective for QA override logic
+      const labels = props['Labels']?.multi_select?.map((s: any) => s.name) ?? [];
+      const objective = props['Objective']?.relation ?? [];
+      
+      // Debug logging for Labels property loading
+      if (title.includes('QA') || title.includes('qa')) {
+        console.log(`🔍 Debug Labels for "${title}":`);
+        console.log(`   Raw Labels prop: ${JSON.stringify(props['Labels'])}`);
+        console.log(`   Labels type: ${typeof props['Labels']}`);
+        console.log(`   Labels multi_select: ${JSON.stringify(props['Labels']?.multi_select)}`);
+        console.log(`   Final labels array: ${JSON.stringify(labels)}`);
+        console.log(`   All available properties: ${JSON.stringify(Object.keys(props))}`);
+        console.log(`   Properties that contain 'label': ${JSON.stringify(Object.keys(props).filter(key => key.toLowerCase().includes('label')))}`);
+        console.log(`   Properties that contain 'tag': ${JSON.stringify(Object.keys(props).filter(key => key.toLowerCase().includes('tag')))}`);
+        
+        // Check specific property names that might exist
+        console.log(`   Has 'Labels' property: ${'Labels' in props}`);
+        console.log(`   Has 'Tags' property: ${'Tags' in props}`);
+        console.log(`   Has 'Label' property: ${'Label' in props}`);
+        console.log(`   Has 'Tag' property: ${'Tag' in props}`);
+        
+        // Show first few properties in detail
+        const propNames = Object.keys(props).slice(0, 5);
+        for (const propName of propNames) {
+          console.log(`   Property "${propName}": ${JSON.stringify(props[propName])}`);
+        }
+      }
+
       // No client-side filtering needed - database already filtered
       tasks.push({
         pageId: page.id,
@@ -94,7 +122,9 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
         'Parent Task': parentTask,
         'Importance Rollup': importanceRollup,
         'Task Started Date': taskStartedDate,
-        'Projected Completion': projectedCompletion
+        'Projected Completion': projectedCompletion,
+        Labels: labels,
+        Objective: objective
       } as Task);
     }
     

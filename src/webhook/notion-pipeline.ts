@@ -1,4 +1,4 @@
-import { calculateQueueRank } from '../core';
+import { calculateQueueRankAsync } from '../core';
 import { loadTasks, updateQueueRanksSurgically } from '../api';
 
 export interface PipelineOptions {
@@ -27,11 +27,11 @@ export async function runNotionPipeline(userId: string, userName: string, option
     console.log(`📊 Loaded ${userTasks.length} tasks for ${userName}`);
   }
 
-  // Calculate queue ranks
+  // Calculate queue ranks + projections
   if (options.enableLogging) {
     console.log('🧮 Calculating queue ranks...');
   }
-  const processed = calculateQueueRank(userTasks);
+  const processed = await calculateQueueRankAsync(userTasks);
   
   if (options.enableLogging) {
     console.log(`📈 Processed ${processed.length} tasks with queue ranks`);

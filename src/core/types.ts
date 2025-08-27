@@ -14,6 +14,8 @@ export interface Task {
   'Projected Completion'?: string;
   queue_rank?: number;
   pageId?: string; // Added for Notion API support
+  Labels?: string[]; // Multi-select labels for QA override logic
+  Objective?: Array<{ id: string }>; // Relation to Objective for QA override logic
 }
 
 export interface ProcessedTask extends Task {
@@ -22,6 +24,11 @@ export interface ProcessedTask extends Task {
   'Projected Completion': string;
   'Estimated Days Remaining': number;
   pageId: string; // Required for Notion API writeback
+}
+
+export interface RankedTask extends Task {
+  queue_rank: number;
+  queue_score: number;
 }
 
 // Constants
