@@ -85,8 +85,8 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
       const labels = props['Labels']?.multi_select?.map((s: any) => s.name) ?? [];
       const objective = props['Objective']?.relation ?? [];
       
-      // Debug logging for Labels property loading
-      if (title.includes('QA') || title.includes('qa')) {
+      // Debug logging for Labels property loading (only when DEBUG_LABELS=true)
+      if ((process.env.DEBUG_LABELS === 'true') && (title.includes('QA') || title.includes('qa'))) {
         console.log(`🔍 Debug Labels for "${title}":`);
         console.log(`   Raw Labels prop: ${JSON.stringify(props['Labels'])}`);
         console.log(`   Labels type: ${typeof props['Labels']}`);
@@ -219,7 +219,7 @@ export async function updateQueueRanksSurgically(
   userFilter: string, 
   processedTasks: ProcessedTask[]
 ): Promise<void> {
-  console.log(`🎯 Surgically updating queue ranks for user: ${userFilter}`);
+  console.log(`🔄 Updating queue ranks for user: ${userFilter}`);
   
   // Step 1: Set new queue ranks for processed tasks
   console.log(`📝 Setting new queue ranks for ${processedTasks.length} tasks...`);
@@ -245,7 +245,7 @@ export async function updateQueueRanksSurgically(
           const updatedProps: any = (updated as any).properties ?? {};
           const verifiedDate: string | undefined = updatedProps['Projected Completion']?.date?.start;
           const verifiedRank: number | null | undefined = updatedProps['Queue Rank']?.number;
-          console.log(`🔎 Verified page ${task.pageId}: Projected Completion=${verifiedDate ?? 'undefined'}, Queue Rank=${verifiedRank ?? 'undefined'}`);
+          console.log(`📄 Page updated ${task.pageId}: Projected Completion=${verifiedDate ?? 'undefined'}, Queue Rank=${verifiedRank ?? 'undefined'}`);
         } catch {
           console.warn(`⚠️ Verification failed for page ${task.pageId}`);
         }
