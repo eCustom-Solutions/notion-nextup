@@ -111,7 +111,7 @@ async function runAllUsersHarness() {
       },
     };
 
-    const count = routeAssignees(payload, scheduler as any);
+    const count = await routeAssignees(payload, scheduler as any);
     console.log(`📨 routeAssignees enqueued ${count} users`);
 
     // Wait for all processing to complete (simple timeout 5m)

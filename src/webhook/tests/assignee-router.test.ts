@@ -29,7 +29,7 @@ function buildPayload(people: Array<{ id?: string; name?: string }>) {
   const scheduler = new StubScheduler();
   const payload = buildPayload([{ id: 'u1', name: 'Alice' }]);
   console.log(`  🔍 Calling routeAssignees(payload, scheduler)`);
-  const count = routeAssignees(payload, scheduler as any);
+  const count = await routeAssignees(payload, scheduler as any);
   console.log(`  📊 Result: count=${count}, events.length=${scheduler.events.length}`);
   assert.strictEqual(count, 1, 'should enqueue one assignee');
   assert.deepStrictEqual(scheduler.events[0], { id: 'u1', name: 'Alice' });
@@ -46,7 +46,7 @@ function buildPayload(people: Array<{ id?: string; name?: string }>) {
     { id: 'u3', name: 'Charlie' },
   ]);
   console.log(`  🔍 Calling routeAssignees(payload, scheduler)`);
-  const count = routeAssignees(payload, scheduler as any);
+  const count = await routeAssignees(payload, scheduler as any);
   console.log(`  📊 Result: count=${count}, events.length=${scheduler.events.length}`);
   console.log(`  📋 Events captured:`, scheduler.events);
   assert.strictEqual(count, 3, 'should enqueue all three assignees');
@@ -65,7 +65,7 @@ function buildPayload(people: Array<{ id?: string; name?: string }>) {
   const allow = new Set<string>(['u2']);
   console.log(`  🔒 Allowlist:`, Array.from(allow));
   console.log(`  🔍 Calling routeAssignees(payload, scheduler, allowlist)`);
-  const count = routeAssignees(payload, scheduler as any, allow);
+  const count = await routeAssignees(payload, scheduler as any, allow);
   console.log(`  📊 Result: count=${count}, events.length=${scheduler.events.length}`);
   console.log(`  📋 Events captured:`, scheduler.events);
   assert.strictEqual(count, 1, 'should enqueue only allowed assignee');
@@ -79,7 +79,7 @@ function buildPayload(people: Array<{ id?: string; name?: string }>) {
   const scheduler = new StubScheduler();
   const payload = buildPayload([]);
   console.log(`  🔍 Calling routeAssignees(payload, scheduler)`);
-  const count = routeAssignees(payload, scheduler as any);
+  const count = await routeAssignees(payload, scheduler as any);
   console.log(`  📊 Result: count=${count}, events.length=${scheduler.events.length}`);
   assert.strictEqual(count, 0, 'should enqueue zero when no people');
   assert.strictEqual(scheduler.events.length, 0);

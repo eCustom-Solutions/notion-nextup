@@ -25,19 +25,19 @@ function buildPayload(authors: Array<{ id?: string; type?: string }>) {
 }
 
 // 1) Bot-only authors should be ignored
-(() => {
+;(async () => {
   const scheduler = new StubScheduler();
   const payload = buildPayload([{ id: 'bot1', type: 'bot' }]);
-  const count = routeAssignees(payload, scheduler as any);
+  const count = await routeAssignees(payload, scheduler as any);
   assert.strictEqual(count, 0, 'bot-only webhook should be ignored');
   assert.strictEqual(scheduler.events.length, 0);
 })();
 
 // 2) Human author should be processed
-(() => {
+;(async () => {
   const scheduler = new StubScheduler();
   const payload = buildPayload([{ id: 'user1', type: 'person' }]);
-  const count = routeAssignees(payload, scheduler as any);
+  const count = await routeAssignees(payload, scheduler as any);
   assert.strictEqual(count, 1, 'human webhook should enqueue');
   assert.deepStrictEqual(scheduler.events[0], { id: 'u1', name: 'Alice' });
 })();
