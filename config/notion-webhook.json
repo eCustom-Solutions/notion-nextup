@@ -1,0 +1,29 @@
+{
+  "apiVersion": "2025-09-03",
+  "databases": [
+    {
+      "id": "1906824d-5503-817f-868a-fa7f961a6f8f",
+      "name": "tasks",
+      "dataSourceId": "1906824d-5503-81c5-a61c-000b8b0bfc83",
+      "properties": {
+        "allowById": [
+          "mvxY",
+          "%3Apw~",
+          "rkAq",
+          "title"
+        ]
+      }
+    },
+    {
+      "id": "1906824d-5503-811c-a673-c7f9a5dc306c",
+      "name": "objectives",
+      "dataSourceId": "1906824d-5503-81d9-96c5-000b03e3ddb5",
+      "properties": {
+        "allowById": [
+          "hyXy",
+          "vijH"
+        ]
+      }
+    }
+  ]
+}

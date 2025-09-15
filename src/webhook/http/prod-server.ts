@@ -12,8 +12,12 @@ import { PORT, DEBOUNCE_MS, OBJECTIVES_DB_ID } from '../config';
 import { routeAssignees } from '../assignee-router';
 import { startScheduler } from '../scheduler';
 import { getAssigneesForObjective } from '../../api/objective-fanout';
+import { commentLoggerApp } from '../../integrations/comment-logger';
 
 const app = createBaseApp();
+
+// Mount Notion Comment Logger sub-application under /notion-comments
+app.use('/notion-comments', commentLoggerApp);
 
 const scheduler = startScheduler({ debounceMs: DEBOUNCE_MS, enableLogging: true });
 const objectiveLastHandledAt = new Map<string, number>();
