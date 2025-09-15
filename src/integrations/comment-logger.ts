@@ -2,19 +2,35 @@
 import fs from 'fs';
 import path from 'path';
 
-// Prefer TS sources; ts-node will transpile them at runtime
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { createIngress } = require('../../notion-comment-logger/src/ingress/server');
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { InMemoryFifoQueue } = require('../../notion-comment-logger/src/core/queue');
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { IdempotencyStore } = require('../../notion-comment-logger/src/core/idempotency');
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { FileCommentLogger } = require('../../notion-comment-logger/src/adapters/fileCommentLogger');
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { NotionCommentPublisher } = require('../../notion-comment-logger/src/publishers/notionCommentPublisher');
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { ExecutorWorker } = require('../../notion-comment-logger/src/executor/worker');
+function resolveModule(relPathParts: string[], preferDist: boolean = true): any {
+  const candidates: string[] = [];
+  // Nested repo candidates (within this project)
+  if (preferDist) candidates.push(path.resolve(process.cwd(), 'notion-comment-logger', 'dist', ...relPathParts));
+  candidates.push(path.resolve(process.cwd(), 'notion-comment-logger', 'src', ...relPathParts));
+  // External absolute repo candidates (EC2 layout)
+  if (preferDist) candidates.push(path.resolve('/opt/myapp/notion-comment-logger', 'dist', ...relPathParts));
+  candidates.push(path.resolve('/opt/myapp/notion-comment-logger', 'src', ...relPathParts));
+
+  for (const base of candidates) {
+    try {
+      // Try as-is, then with .js extension
+      if (fs.existsSync(base) || fs.existsSync(base + '.js') || fs.existsSync(base + '.cjs')) {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        return require(fs.existsSync(base) ? base : (fs.existsSync(base + '.js') ? base + '.js' : base + '.cjs'));
+      }
+    } catch {}
+  }
+  // Last-ditch: attempt require of the first candidate (will throw a helpful error)
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  return require(candidates[0]);
+}
+
+const { createIngress } = resolveModule(['ingress', 'server']);
+const { InMemoryFifoQueue } = resolveModule(['core', 'queue']);
+const { IdempotencyStore } = resolveModule(['core', 'idempotency']);
+const { FileCommentLogger } = resolveModule(['adapters', 'fileCommentLogger']);
+const { NotionCommentPublisher } = resolveModule(['publishers', 'notionCommentPublisher']);
+const { ExecutorWorker } = resolveModule(['executor', 'worker']);
 
 // Ensure var directory exists for runtime artifacts
 const varDir = path.join(process.cwd(), 'var');
