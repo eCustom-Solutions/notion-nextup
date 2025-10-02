@@ -30,6 +30,13 @@ export const WORKDAY_START_HOUR: number = Number(process.env.WORKDAY_START_HOUR 
 export const WORKDAY_END_HOUR: number = Number(process.env.WORKDAY_END_HOUR ?? 16);
 export const TIMEZONE: string = process.env.TIMEZONE ?? 'America/Los_Angeles';
 
+// Hours-first staging migration toggles and property names
+export const PREFER_ESTIMATED_HOURS_STAGING: boolean = String(process.env.PREFER_ESTIMATED_HOURS_STAGING ?? 'false') === 'true';
+export const ESTIMATED_HOURS_PROP: string = process.env.ESTIMATED_HOURS_PROP ?? 'Estimated Hours (Staging)';
+export const ESTIMATED_HOURS_REMAINING_PROP: string = process.env.ESTIMATED_HOURS_REMAINING_PROP ?? 'Estimated Hours Remaining (Staging)';
+export const ESTIMATED_DAYS_PROP: string = process.env.ESTIMATED_DAYS_PROP ?? 'Estimated Days';
+export const ESTIMATED_DAYS_REMAINING_PROP: string = process.env.ESTIMATED_DAYS_REMAINING_PROP ?? 'Estimated Days Remaining';
+
 // Author classification toggles (for Automation webhook payloads)
 export const ALLOW_BOT_EVENTS: boolean = String(process.env.ALLOW_BOT_EVENTS ?? 'false') === 'true';
 export const ALLOW_AUTOMATION_EVENTS: boolean = String(process.env.ALLOW_AUTOMATION_EVENTS ?? 'false') === 'true';
