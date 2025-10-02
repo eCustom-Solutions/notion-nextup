@@ -5,7 +5,7 @@ import * as dotenv from 'dotenv';
 // Load environment variables from .env file
 dotenv.config();
 import '../utils/logger';
-import { calculateQueueRank } from '../core/queue-ranking';
+import { calculateQueueRankAsync } from '../core/queue-ranking';
 import { loadTasks, updateQueueRanksSurgically } from '../api/notion-adapter';
 
 /**
@@ -48,7 +48,7 @@ async function main(): Promise<void> {
     console.log(`Found ${tasks.length} total tasks`);
 
     console.log('Calculating queue ranks and projected days...');
-    const processedTasks = calculateQueueRank(tasks);
+    const processedTasks = await calculateQueueRankAsync(tasks);
     
     if (!dryRun) {
       console.log('Writing results back to Notion...');
@@ -57,6 +57,13 @@ async function main(): Promise<void> {
     } else {
       console.log('Dry run mode - skipping writeback');
       console.log(`Would update ${processedTasks.length} tasks`);
+      // Print a concise preview of projected completion based on hours-staging if enabled
+      const preview = processedTasks.slice(0, Math.min(10, processedTasks.length)).map(t => ({
+        name: t.Name,
+        rank: t.queue_rank,
+        projected: t['Projected Completion'],
+      }));
+      console.table(preview);
     }
     
   } catch (error) {

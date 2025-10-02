@@ -62,8 +62,26 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
       const ownerPeople = props['Assignee']?.people ?? [];
       const owner = ownerPeople[0]?.name ?? '';
       const status = props['Status (IT)']?.status?.name ?? '';
-      const estDays = props['Estimated Days']?.number ?? 0;
-      const estRem = props['Estimated Days Remaining']?.number ?? estDays;
+      // Prefer hours (staging) when requested; fall back to legacy days
+      const preferHoursStaging: boolean = String(process.env.PREFER_ESTIMATED_HOURS_STAGING ?? 'false') === 'true';
+      const startHour = Number(process.env.WORKDAY_START_HOUR ?? 8);
+      const endHour = Number(process.env.WORKDAY_END_HOUR ?? 16);
+      const workdayHours = Number.isFinite(startHour) && Number.isFinite(endHour) && endHour > startHour ? (endHour - startHour) : 8;
+
+      // Read hours staging (if present)
+      const hoursStaging: number | undefined = props['Estimated Hours (Staging)']?.number ?? undefined;
+      const hoursRemStaging: number | undefined = props['Estimated Hours Remaining (Staging)']?.number ?? undefined;
+
+      // Read legacy day fields
+      const daysLegacy: number | undefined = props['Estimated Days']?.number ?? undefined;
+      const daysRemLegacy: number | undefined = props['Estimated Days Remaining']?.number ?? undefined;
+
+      // Convert hours → days when using hours
+      const daysFromHours: number | undefined = typeof hoursStaging === 'number' ? (hoursStaging / workdayHours) : undefined;
+      const daysRemFromHours: number | undefined = typeof hoursRemStaging === 'number' ? (hoursRemStaging / workdayHours) : undefined;
+
+      const estDays = preferHoursStaging ? (daysFromHours ?? daysLegacy ?? 0) : (daysLegacy ?? daysFromHours ?? 0);
+      const estRem = preferHoursStaging ? (daysRemFromHours ?? daysRemLegacy ?? estDays) : (daysRemLegacy ?? daysRemFromHours ?? estDays);
       const dueDate = props['Due']?.date?.start
         ? new Date(props['Due'].date.start).toLocaleDateString('en-US', { 
             month: 'long', 
