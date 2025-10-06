@@ -1,19 +1,19 @@
 import notion from './client';
 import { Task, ProcessedTask, EXCLUDED_STATUSES } from '../core/types';
+import {
+  PREFER_ESTIMATED_HOURS_STAGING,
+  ESTIMATED_HOURS_PROP,
+  ESTIMATED_HOURS_REMAINING_PROP,
+  ESTIMATED_DAYS_PROP,
+  ESTIMATED_DAYS_REMAINING_PROP,
+  WORKDAY_START_HOUR,
+  WORKDAY_END_HOUR,
+} from '../webhook/config';
 
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 import { findUserUUID } from './user-lookup';
-import {
-  PREFER_ESTIMATED_HOURS_STAGING,
-  WORKDAY_START_HOUR,
-  WORKDAY_END_HOUR,
-  ESTIMATED_HOURS_PROP,
-  ESTIMATED_HOURS_REMAINING_PROP,
-  ESTIMATED_DAYS_PROP,
-  ESTIMATED_DAYS_REMAINING_PROP,
-} from '../webhook/config';
 
 /**
  * Loads tasks from Notion database
@@ -71,26 +71,31 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
       const ownerPeople = props['Assignee']?.people ?? [];
       const owner = ownerPeople[0]?.name ?? '';
       const status = props['Status (IT)']?.status?.name ?? '';
-      // Prefer hours (staging) when requested; fall back to legacy days
-      const preferHoursStaging: boolean = PREFER_ESTIMATED_HOURS_STAGING;
-      const startHour = WORKDAY_START_HOUR;
-      const endHour = WORKDAY_END_HOUR;
-      const workdayHours = endHour > startHour ? (endHour - startHour) : 8;
+      // Prefer hours-first staging properties (convert hours → days) when enabled
+      const workdayHours = WORKDAY_END_HOUR - WORKDAY_START_HOUR;
+      const preferHours = PREFER_ESTIMATED_HOURS_STAGING;
 
-      // Read hours staging (if present)
-      const hoursStaging: number | undefined = props[ESTIMATED_HOURS_PROP]?.number ?? undefined;
-      const hoursRemStaging: number | undefined = props[ESTIMATED_HOURS_REMAINING_PROP]?.number ?? undefined;
+      let estDays = 0;
+      let estRem = 0;
 
-      // Read legacy day fields
-      const daysLegacy: number | undefined = props[ESTIMATED_DAYS_PROP]?.number ?? undefined;
-      const daysRemLegacy: number | undefined = props[ESTIMATED_DAYS_REMAINING_PROP]?.number ?? undefined;
+      if (preferHours) {
+        const hours = props[ESTIMATED_HOURS_PROP]?.number;
+        const hoursRem = props[ESTIMATED_HOURS_REMAINING_PROP]?.number;
 
-      // Convert hours → days when using hours
-      const daysFromHours: number | undefined = typeof hoursStaging === 'number' ? (hoursStaging / workdayHours) : undefined;
-      const daysRemFromHours: number | undefined = typeof hoursRemStaging === 'number' ? (hoursRemStaging / workdayHours) : undefined;
+        if (typeof hoursRem === 'number') {
+          estRem = hoursRem / workdayHours;
+          estDays = estRem; // fallback if only remaining is present
+        } else if (typeof hours === 'number') {
+          estDays = hours / workdayHours;
+          estRem = estDays; // fallback if only total is present
+        }
+      }
 
-      const estDays = preferHoursStaging ? (daysFromHours ?? daysLegacy ?? 0) : (daysLegacy ?? daysFromHours ?? 0);
-      const estRem = preferHoursStaging ? (daysRemFromHours ?? daysRemLegacy ?? estDays) : (daysRemLegacy ?? daysRemFromHours ?? estDays);
+      // Fallback to legacy days properties when hours not preferred or not found
+      if (estDays === 0 && estRem === 0) {
+        estDays = props[ESTIMATED_DAYS_PROP]?.number ?? 0;
+        estRem = props[ESTIMATED_DAYS_REMAINING_PROP]?.number ?? estDays;
+      }
       const dueDate = props['Due']?.date?.start
         ? new Date(props['Due'].date.start).toLocaleDateString('en-US', { 
             month: 'long', 

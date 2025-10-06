@@ -1,0 +1,26 @@
+Estimated Days → Estimated Hours: Codebase Impact
+
+Current Usage
+- loadTasks maps the Notion properties "Estimated Days" and "Estimated Days Remaining" into Task records (`src/api/notion-adapter.ts:62`, `src/api/notion-adapter.ts:66`).
+- Core types and projection code expect numbers expressed in days (`src/core/types.ts:5`, `src/core/projection-engine.ts:32`).
+- The CLI, performance script, and integration test still call the synchronous `calculateQueueRank`, which now throws, while the async path is live (`src/cli/notion-nextup.ts:50`, `src/utils/performance-test.ts:49`, `src/tests/notion-integration.ts:27`, `src/core/queue-ranking.ts:170`).
+
+Migration Plan (Restated)
+1. Rename the Notion properties and update every string reference in code, types, docs, and scripts.
+2. Introduce staging hour properties and migration scripts that copy + convert days → hours. Use Derious-only runs (allowlist already supported) to validate without touching all users.
+3. Update pipeline logic to prefer the new hour fields while falling back to legacy day fields until rollout completes. Adjust projection math to consume hours instead of converting days on the fly.
+4. Coordinate with the team so they understand the rollout and the new fields.
+
+Migration Mechanics
+- Add scripts (likely under `scripts/` or `src/scripts/`) that can copy and convert values for a demo user or for all users, with dry-run/live flags mirroring existing harness patterns.
+- Write unit tests around conversion helpers and projection math before hitting the API.
+- During migration, the Task model and ranking engine should read staged hour fields first, then fall back to the legacy values.
+
+Server / Pipeline Updates
+- Update `Task` interfaces, ranking, and projection logic so hours become the first-class unit. Once complete, revisit `daysToHours`/`calculateBusinessDaysFrom` naming.
+- Remove references to the deprecated synchronous `calculateQueueRank`; switch CLI/debug/perf/test entry points to `await calculateQueueRankAsync(...)`.
+
+Additional Considerations
+- `Estimated Days Remaining` is formula-driven. Either keep it and add an hour companion, or convert the formula once downstream code handles hours.
+- Update README, testing guide, performance docs, and reporting scripts that mention “days”.
+- Use the existing allowlist in `src/webhook/http/prod-server.ts:101` to keep early runs scoped to Derious.

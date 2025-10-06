@@ -57,11 +57,11 @@ async function main(): Promise<void> {
     } else {
       console.log('Dry run mode - skipping writeback');
       console.log(`Would update ${processedTasks.length} tasks`);
-      // Print a concise preview of projected completion based on hours-staging if enabled
-      const preview = processedTasks.slice(0, Math.min(10, processedTasks.length)).map(t => ({
-        name: t.Name,
+      // Optional: show a small preview of updates
+      const preview = processedTasks.slice(0, 10).map(t => ({
+        name: `'${t.Name}'`,
         rank: t.queue_rank,
-        projected: t['Projected Completion'],
+        projected: `'${t['Projected Completion']}'`,
       }));
       console.table(preview);
     }

@@ -26,6 +26,7 @@ ec2-instance-docs/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.backup.2025-10-02_144345
 
 # IDE files
 .vscode/
