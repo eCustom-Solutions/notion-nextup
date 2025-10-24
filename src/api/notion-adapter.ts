@@ -378,13 +378,30 @@ export async function updateQueueRanksSurgically(
       }))
     ];
 
-    // Add user filter
+    // Add user filter (Owner relation preferred)
     const userUUID = await findUserUUID(userFilter);
     if (userUUID) {
-      filterConditions.push({
-        property: 'Assignee',
-        people: { contains: userUUID }
-      });
+      if (GROUP_BY_PROP === 'Owner') {
+        // Resolve People page id for this user's UUID
+        try {
+          const peopleDb = await notion.databases();
+          const res: any = await peopleDb.query({
+            database_id: PEOPLE_DB_ID,
+            page_size: 1,
+            filter: { property: PEOPLE_USER_PROP, people: { contains: userUUID } } as any,
+          });
+          const peoplePageId: string | undefined = (res?.results ?? [])[0]?.id;
+          if (peoplePageId) {
+            filterConditions.push({ property: TASK_OWNER_PROP, relation: { contains: peoplePageId } } as any);
+          } else {
+            console.warn(`⚠️ Could not resolve People page for user UUID ${userUUID}; clearing without owner filter`);
+          }
+        } catch (e) {
+          console.warn('⚠️ Failed resolving People page for Owner filter:', e);
+        }
+      } else {
+        filterConditions.push({ property: 'Assignee', people: { contains: userUUID } });
+      }
     } else {
       console.warn(`⚠️ Could not find UUID for user: ${userFilter}. Falling back to client-side filtering.`);
     }
