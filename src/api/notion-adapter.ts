@@ -85,7 +85,7 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
     let res: any;
     try {
       if (DEBUG_ROUTING) {
-        console.log('[clear] Querying for excluded ranks with params:', JSON.stringify(queryParams));
+        console.log('[load] Querying tasks with params:', JSON.stringify(queryParams));
       }
       res = await notionClient.query(queryParams);
     } catch (e: any) {
@@ -96,9 +96,9 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
         status: e?.status,
         body: e?.body,
       };
-      console.error('[clear] Notion query failed', errInfo);
-      // If validation error (e.g., bad property), abort clearing gracefully
-      return cleared;
+      console.error('[load] Notion query failed', errInfo);
+      // Abort load gracefully with whatever we have so far
+      return tasks;
     }
     
     for (const page of res.results) {
