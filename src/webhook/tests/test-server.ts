@@ -10,6 +10,7 @@ import { routeAssignees } from '../assignee-router';
 import fs from 'fs';
 import path from 'path';
 import { getAllUsers } from '../../api/user-lookup';
+import { loadAllowedUsers } from '../allowlist';
 import { invokePipeline } from '../runtime/invoke-pipeline';
 import { DEBOUNCE_MS } from '../config';
 // Notion client instance used by adapters – we can monkey‑patch for simulations
@@ -156,46 +157,14 @@ async function runAllUsersHarness() {
     }
   });
 
-  // Determine include list priority: USERS_INCLUDE_UUIDS > USERS_INCLUDE_FILE > default allowlist > regex
-  let includeUUIDs: string[] | undefined;
-  if (includeUuidsRaw) {
-    includeUUIDs = includeUuidsRaw.split(',').map(s => s.trim()).filter(Boolean);
-  } else {
-    const candidatePath = includeFileRaw ? path.resolve(process.cwd(), includeFileRaw) : defaultAllowlistPath;
-    if (fs.existsSync(candidatePath)) {
-      const content = fs.readFileSync(candidatePath, 'utf8');
-      if (/\{/.test(content)) {
-        // JSON
-        const json = JSON.parse(content);
-        if (Array.isArray(json.uuids)) includeUUIDs = json.uuids as string[];
-      } else {
-        // CSV: try to parse uuid column
-        includeUUIDs = content.split(/\r?\n/)
-          .map(l => l.trim())
-          .filter(l => l && !/^name/i.test(l))
-          .map(l => l.split(',')[1]?.trim())
-          .filter(Boolean) as string[];
-      }
-    }
+  // Mirror server allowlist behavior first, then apply optional regex/max filters
+  let selected = await loadAllowedUsers();
+  if (selected.length === 0) {
+    // fallback to workspace users if no allowlist mode
+    const userMap = await getAllUsers();
+    selected = Array.from(userMap.entries()).map(([name, id]) => ({ id, name }));
   }
-
-  // Discover users from workspace, then select by include list or regex
-  const userMap = await getAllUsers(); // Map<name, uuid>
-  const selected: Array<{ id: string; name: string }> = [];
-  if (includeUUIDs && includeUUIDs.length > 0) {
-    // Build reverse map uuid->name
-    const uuidToName = new Map<string, string>();
-    for (const [name, uuid] of userMap.entries()) uuidToName.set(uuid, name);
-    for (const uuid of includeUUIDs) {
-      const name = uuidToName.get(uuid) ?? uuid;
-      selected.push({ id: uuid, name });
-    }
-  } else {
-    for (const [name, id] of userMap.entries()) {
-      if (regex && !regex.test(name)) continue;
-      selected.push({ id, name });
-    }
-  }
+  if (regex) selected = selected.filter(u => regex.test(u.name));
   if (maxUsers > 0) selected.splice(maxUsers);
 
   if (selected.length === 0) {
