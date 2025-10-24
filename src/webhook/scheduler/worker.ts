@@ -55,8 +55,16 @@ export class SingleWorker {
         } else {
           await invokePipeline(userId, state.userName);
         }
-      } catch (e) {
-        console.error(`❌ Error processing user ${state.userName} (${userId})`, e);
+      } catch (e: any) {
+        const errInfo = {
+          name: e?.name,
+          message: e?.message,
+          code: e?.code,
+          status: e?.status,
+          body: e?.body,
+          stack: e?.stack,
+        };
+        console.error(`❌ Error processing user ${state.userName} (${userId})`, errInfo);
       } finally {
         state.isProcessing = false;
         if (state.rerunRequested && !state.inQueue) {
