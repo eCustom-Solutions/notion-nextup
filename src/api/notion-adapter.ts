@@ -5,7 +5,7 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 import { findUserUUID } from './user-lookup';
-import { GROUP_BY_PROP, TASK_OWNER_PROP } from '../webhook/config';
+import { GROUP_BY_PROP, TASK_OWNER_PROP, PEOPLE_DB_ID, PEOPLE_USER_PROP } from '../webhook/config';
 
 /**
  * Loads tasks from Notion database
@@ -13,6 +13,23 @@ import { GROUP_BY_PROP, TASK_OWNER_PROP } from '../webhook/config';
 export async function loadTasks(databaseId: string, userFilter?: string): Promise<Task[]> {
   const tasks: Task[] = [];
   let cursor: string | undefined = undefined;
+  
+  // Helper: resolve People page id for a given Notion user UUID via People DB
+  async function resolvePeoplePageIdForUser(userUuid: string): Promise<string | null> {
+    if (!PEOPLE_DB_ID) return null;
+    try {
+      const notionClient = await notion.databases();
+      const res: any = await notionClient.query({
+        database_id: PEOPLE_DB_ID,
+        page_size: 1,
+        filter: { property: PEOPLE_USER_PROP, people: { contains: userUuid } } as any,
+      });
+      const pg = (res?.results ?? [])[0];
+      return pg?.id ?? null;
+    } catch {
+      return null;
+    }
+  }
 
   do {
     const notionClient = await notion.databases();
@@ -37,10 +54,22 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
     if (userFilter) {
       const userUUID = await findUserUUID(userFilter);
       if (userUUID) {
-        filterConditions.push({
-          property: 'Assignee',
-          people: { contains: userUUID }
-        });
+        if (GROUP_BY_PROP === 'Owner') {
+          const peoplePageId = await resolvePeoplePageIdForUser(userUUID);
+          if (peoplePageId) {
+            filterConditions.push({
+              property: TASK_OWNER_PROP,
+              relation: { contains: peoplePageId }
+            } as any);
+          } else {
+            console.warn(`⚠️ Could not resolve People page for user UUID ${userUUID}; falling back to unfiltered load`);
+          }
+        } else {
+          filterConditions.push({
+            property: 'Assignee',
+            people: { contains: userUUID }
+          });
+        }
       } else {
         console.warn(`⚠️ Could not find UUID for user: ${userFilter}. Falling back to client-side filtering.`);
       }
@@ -60,7 +89,7 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
       // Extract properties from Notion page
       const props = (page as any).properties;
       const title = props['Name']?.title?.[0]?.plain_text ?? '';
-      // Resolve owner display name for grouping
+      // Resolve owner display name or key for grouping
       let owner = '';
       // Prefer Owner relation title (fallback to Assignee people name)
       const ownerRel = props[TASK_OWNER_PROP]?.relation as Array<{ id: string }> | undefined;
