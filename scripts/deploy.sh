@@ -14,7 +14,11 @@ fi
 
 APP_DIR="/opt/myapp/notion-nextup"
 HEALTH_HOST="${HEALTH_HOST:-notion.api}"
-HEALTH_URL="https://${HEALTH_HOST}:443/healthz"
+HEALTH_PORT="${HEALTH_PORT:-443}"
+HEALTH_URL="${HEALTH_URL:-}"
+if [[ -z "${HEALTH_URL}" ]]; then
+  HEALTH_URL="https://${HEALTH_HOST}:${HEALTH_PORT}/healthz"
+fi
 
 cd "${APP_DIR}"
 
@@ -32,7 +36,17 @@ log "reload pm2 (zero-downtime)"
 pm2 reload notion-webhook --update-env
 
 log "health check ${HEALTH_URL}"
-# -k to tolerate IP-based checks if HEALTH_HOST is an IP without cert SAN
+# Retry health check to avoid brief reload gaps
+for i in {1..15}; do
+  if curl -ksSf "${HEALTH_URL}" | grep -qx 'ok'; then
+    log "health check passed"
+    break
+  fi
+  log "health not ready (attempt ${i}), retrying..."
+  sleep 2
+done
+
+# Final assert
 curl -ksSf "${HEALTH_URL}" | grep -qx 'ok'
 
 log "deploy succeeded"
