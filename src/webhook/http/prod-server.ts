@@ -109,6 +109,13 @@ app.post('/notion-webhook', async (req, res) => {
     ? authorsArr.map((a: any) => `${a.type}:${(a.id ?? '').slice(0,8)}`).join(',')
     : 'none';
   console.log(`📨 Webhook received: id=${webhookId}, db=${webhookDb}, type=${webhookType}, authors=[${authorSummary}]`);
+  if (process.env.DEBUG_ROUTING === 'true') {
+    try {
+      console.log(`[debug] properties keys: ${Object.keys((req.body as any)?.data?.properties || {}).join(',')}`);
+      const ownerRel = (req.body as any)?.data?.properties?.Owner?.relation || [];
+      console.log(`[debug] Owner relation count: ${Array.isArray(ownerRel) ? ownerRel.length : 0}`);
+    } catch {}
+  }
 
   const parentDb = req.body?.data?.parent?.database_id as string | undefined;
 

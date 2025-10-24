@@ -1,7 +1,7 @@
 import { Scheduler } from './scheduler';
 import { classifyFromPage, shouldProcess, logClassification, logSkip } from './author-classifier';
 import notion from '../api/client';
-import { ALLOWLIST_MODE, PEOPLE_DB_ID, PEOPLE_USER_PROP, TASK_OWNER_PROP } from './config';
+import { ALLOWLIST_MODE, PEOPLE_DB_ID, PEOPLE_USER_PROP, TASK_OWNER_PROP, DEBUG_ROUTING } from './config';
 
 /**
  * Routes all assignees found in a Notion webhook payload to the scheduler.
@@ -49,6 +49,9 @@ export async function routeAssignees(
       const uid: string | undefined = userProp[0]?.id;
       const uname: string | undefined = userProp[0]?.name;
       if (uid && uname) idName = { id: uid, name: uname };
+      if (DEBUG_ROUTING) {
+        console.log(`[route] Owner relation -> people page ${ownerPageId} → user ${uid ?? 'null'} (${uname ?? 'null'})`);
+      }
     } catch {}
   }
 
@@ -58,11 +61,21 @@ export async function routeAssignees(
     const uid: string | undefined = people[0]?.id;
     const uname: string | undefined = people[0]?.name;
     if (uid && uname) idName = { id: uid, name: uname };
+    if (DEBUG_ROUTING) {
+      console.log(`[route] Fallback Assignee → user ${idName?.id ?? 'null'} (${idName?.name ?? 'null'})`);
+    }
   }
 
-  if (!idName) return 0;
+  if (!idName) {
+    if (DEBUG_ROUTING) console.log('[route] No identity resolved; skipping');
+    return 0;
+  }
   // If allowlist mode is people_db_has_user and no explicit allowlist provided, treat as allowed
-  if (allowlist && allowlist.size > 0 && !allowlist.has(idName.id)) return 0;
+  if (allowlist && allowlist.size > 0 && !allowlist.has(idName.id)) {
+    if (DEBUG_ROUTING) console.log(`[route] Identity ${idName.id} not in allowlist; skipping`);
+    return 0;
+  }
+  if (DEBUG_ROUTING) console.log(`[route] Enqueue ${idName.name} (${idName.id})`);
   scheduler.routeEvent(idName.id, idName.name);
   return 1;
 }
