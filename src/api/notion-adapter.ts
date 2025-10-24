@@ -5,7 +5,7 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 import { findUserUUID } from './user-lookup';
-import { GROUP_BY_PROP, TASK_OWNER_PROP, PEOPLE_DB_ID, PEOPLE_USER_PROP } from '../webhook/config';
+import { GROUP_BY_PROP, TASK_OWNER_PROP, PEOPLE_DB_ID, PEOPLE_USER_PROP, DEBUG_ROUTING } from '../webhook/config';
 
 /**
  * Loads tasks from Notion database
@@ -82,7 +82,24 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
       queryParams.filter = { and: filterConditions };
     }
 
-    const res = await notionClient.query(queryParams);
+    let res: any;
+    try {
+      if (DEBUG_ROUTING) {
+        console.log('[clear] Querying for excluded ranks with params:', JSON.stringify(queryParams));
+      }
+      res = await notionClient.query(queryParams);
+    } catch (e: any) {
+      const errInfo = {
+        name: e?.name,
+        message: e?.message,
+        code: e?.code,
+        status: e?.status,
+        body: e?.body,
+      };
+      console.error('[clear] Notion query failed', errInfo);
+      // If validation error (e.g., bad property), abort clearing gracefully
+      return cleared;
+    }
     
     for (const page of res.results) {
       if ((page as any).archived === true) continue;
