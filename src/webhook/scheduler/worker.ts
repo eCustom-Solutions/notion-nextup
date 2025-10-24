@@ -64,7 +64,7 @@ export class SingleWorker {
           body: e?.body,
           stack: e?.stack,
         };
-        console.error(`❌ Error processing user ${state.userName} (${userId})`, errInfo);
+        console.error(`❌ Error processing user ${state.userName} (${userId}) ${JSON.stringify(errInfo)}`);
       } finally {
         state.isProcessing = false;
         if (state.rerunRequested && !state.inQueue) {
