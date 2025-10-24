@@ -8,10 +8,11 @@ import '../../utils/logger';
 import fs from 'fs';
 import path from 'path';
 import { createBaseApp } from './base-server';
-import { PORT, DEBOUNCE_MS, OBJECTIVES_DB_ID } from '../config';
+import { PORT, DEBOUNCE_MS, OBJECTIVES_DB_ID, ALLOWLIST_MODE, PEOPLE_DB_ID, PEOPLE_USER_PROP } from '../config';
 import { routeAssignees } from '../assignee-router';
 import { startScheduler } from '../scheduler';
 import { getAssigneesForObjective } from '../../api/objective-fanout';
+import notion from '../../api/client';
 
 const app = createBaseApp();
 
@@ -19,7 +20,37 @@ const scheduler = startScheduler({ debounceMs: DEBOUNCE_MS, enableLogging: true 
 const objectiveLastHandledAt = new Map<string, number>();
 
 // Include list: allow processing only for these user UUIDs if provided
-function loadIncludeUUIDs(): Set<string> {
+async function loadIncludeUUIDs(): Promise<Set<string>> {
+  // Mode 1: derive allowlist from People DB → User property
+  if (ALLOWLIST_MODE === 'people_db_has_user' && PEOPLE_DB_ID) {
+    try {
+      const db = await notion.databases();
+      let cursor: string | undefined = undefined;
+      const ids = new Set<string>();
+      do {
+        const res = await db.query({
+          database_id: PEOPLE_DB_ID,
+          page_size: 100,
+          start_cursor: cursor,
+          filter: { property: PEOPLE_USER_PROP, people: { is_not_empty: true } } as any,
+        } as any);
+        const results: any[] = (res as any).results || [];
+        for (const page of results) {
+          const props = (page as any).properties || {};
+          const ppl = props[PEOPLE_USER_PROP]?.people ?? [];
+          const uid: string | undefined = ppl[0]?.id;
+          if (uid) ids.add(uid);
+        }
+        cursor = (res as any).has_more ? (res as any).next_cursor : undefined;
+      } while (cursor);
+      console.log(`🔒 Allowlist (People DB) active: ${ids.size} user UUIDs will be processed`);
+      return ids;
+    } catch (e) {
+      console.warn('⚠️ Failed to build allowlist from People DB; falling back to legacy:', e);
+    }
+  }
+
+  // Mode 2: legacy env/file-driven allowlist
   const includeUuidsRaw = process.env.USERS_INCLUDE_UUIDS; // comma-separated
   const includeFileRaw = process.env.USERS_INCLUDE_FILE; // JSON or CSV path
   const defaultAllowlistPath = path.resolve(process.cwd(), 'src/webhook/allowlists/tech-users.json');
@@ -58,7 +89,8 @@ function loadIncludeUUIDs(): Set<string> {
   return set;
 }
 
-const includeUUIDs = loadIncludeUUIDs();
+let includeUUIDs: Set<string> = new Set();
+(async () => { try { includeUUIDs = await loadIncludeUUIDs(); } catch {} })();
 
 // Helper to normalize Notion database IDs for comparison (remove dashes)
 function normalizeNotionId(id: string): string {
