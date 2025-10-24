@@ -1,5 +1,7 @@
 import { Scheduler } from './scheduler';
 import { classifyFromPage, shouldProcess, logClassification, logSkip } from './author-classifier';
+import notion from '../api/client';
+import { ALLOWLIST_MODE, PEOPLE_DB_ID, PEOPLE_USER_PROP, TASK_OWNER_PROP } from './config';
 
 /**
  * Routes all assignees found in a Notion webhook payload to the scheduler.
@@ -33,15 +35,34 @@ export async function routeAssignees(
     return 0;
   }
 
-  const people = pageLike?.properties?.Assignee?.people ?? p?.data?.properties?.Assignee?.people ?? [];
-  let count = 0;
-  for (const person of people) {
-    const id: string | undefined = person?.id;
-    const name: string | undefined = person?.name;
-    if (!id || !name) continue;
-    if (allowlist && allowlist.size > 0 && !allowlist.has(id)) continue;
-    scheduler.routeEvent(id, name);
-    count += 1;
+  // New path: resolve identity from Owner relation if present
+  const props = pageLike?.properties ?? {};
+  const ownerRel = props[TASK_OWNER_PROP]?.relation as Array<{ id: string }> | undefined;
+  let idName: { id: string; name: string } | null = null;
+  if (ownerRel && ownerRel.length > 0 && PEOPLE_DB_ID) {
+    const ownerPageId = ownerRel[0].id;
+    try {
+      const pages = await (await notion.pages());
+      // Retrieve People page and read PEOPLE_USER_PROP (people property)
+      const peoplePage: any = await pages.retrieve({ page_id: ownerPageId });
+      const userProp = peoplePage?.properties?.[PEOPLE_USER_PROP]?.people ?? [];
+      const uid: string | undefined = userProp[0]?.id;
+      const uname: string | undefined = userProp[0]?.name;
+      if (uid && uname) idName = { id: uid, name: uname };
+    } catch {}
   }
-  return count;
+
+  // Legacy fallback: Assignee people
+  if (!idName) {
+    const people = props?.Assignee?.people ?? [];
+    const uid: string | undefined = people[0]?.id;
+    const uname: string | undefined = people[0]?.name;
+    if (uid && uname) idName = { id: uid, name: uname };
+  }
+
+  if (!idName) return 0;
+  // If allowlist mode is people_db_has_user and no explicit allowlist provided, treat as allowed
+  if (allowlist && allowlist.size > 0 && !allowlist.has(idName.id)) return 0;
+  scheduler.routeEvent(idName.id, idName.name);
+  return 1;
 }

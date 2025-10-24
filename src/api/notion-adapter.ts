@@ -5,6 +5,7 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 import { findUserUUID } from './user-lookup';
+import { GROUP_BY_PROP, TASK_OWNER_PROP } from '../webhook/config';
 
 /**
  * Loads tasks from Notion database
@@ -59,8 +60,17 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
       // Extract properties from Notion page
       const props = (page as any).properties;
       const title = props['Name']?.title?.[0]?.plain_text ?? '';
-      const ownerPeople = props['Assignee']?.people ?? [];
-      const owner = ownerPeople[0]?.name ?? '';
+      // Resolve owner display name for grouping
+      let owner = '';
+      // Prefer Owner relation title (fallback to Assignee people name)
+      const ownerRel = props[TASK_OWNER_PROP]?.relation as Array<{ id: string }> | undefined;
+      if (ownerRel && ownerRel.length > 0) {
+        // Use the page id as owner key if no title field present; UI-only name map can be resolved upstream if needed
+        owner = ownerRel[0].id;
+      } else {
+        const ownerPeople = props['Assignee']?.people ?? [];
+        owner = ownerPeople[0]?.name ?? '';
+      }
       const status = props['Status (IT)']?.status?.name ?? '';
       const estDays = props['Estimated Days']?.number ?? 0;
       const estRem = props['Estimated Days Remaining']?.number ?? estDays;
@@ -113,7 +123,9 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
       tasks.push({
         pageId: page.id,
         Name: title,
+        // Store owner under both keys during transition for compatibility
         'Assignee': owner,
+        'Owner': owner,
         'Status (IT)': status,
         'Estimated Days': estDays,
         'Estimated Days Remaining': estRem,

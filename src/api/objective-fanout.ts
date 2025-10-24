@@ -54,9 +54,18 @@ export async function getAssigneesForObjective(
       relationTaskCount += results.length;
       for (const page of results) {
         const props = (page as any).properties || {};
-        const people = props['Assignee']?.people ?? [];
-        const uid: string | undefined = people[0]?.id;
-        const name: string | undefined = people[0]?.name;
+        // Prefer Owner→People.User resolution when available
+        const ownerRel = props['Owner']?.relation ?? [];
+        let uid: string | undefined;
+        let name: string | undefined;
+        if (Array.isArray(ownerRel) && ownerRel.length > 0) {
+          // Caller will filter by allowlist later; here we cannot resolve People→User cheaply without extra calls
+          // So fallback to Assignee when present; otherwise skip fanout identity here
+        } else {
+          const people = props['Assignee']?.people ?? [];
+          uid = people[0]?.id;
+          name = people[0]?.name;
+        }
         if (uid && name && !unique.has(uid)) unique.set(uid, name);
       }
 

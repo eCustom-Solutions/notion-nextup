@@ -1,4 +1,5 @@
 import { Task, ProcessedTask, RankedTask, EXCLUDED_STATUSES, PRIORITY_MAP } from './types';
+import { GROUP_BY_PROP } from '../webhook/config';
 import { assignProjections } from './projection-engine';
 
 /**
@@ -11,8 +12,8 @@ import { assignProjections } from './projection-engine';
  * Determines if a task is eligible for processing
  */
 export function isEligible(task: Task): boolean {
-  return task['Assignee'].trim() !== '' && 
-         !EXCLUDED_STATUSES.includes(task['Status (IT)']);
+  const key = (task as any)[GROUP_BY_PROP] as string | undefined;
+  return !!(key && key.trim() !== '') && !EXCLUDED_STATUSES.includes(task['Status (IT)']);
 }
 
 /**
@@ -111,7 +112,7 @@ export function calculateQueueRank(tasks: Task[]): ProcessedTask[] {
   for (const task of tasks) {
     if (!isEligible(task)) continue;
     
-    const owner = task['Assignee'];
+    const owner = (task as any)[GROUP_BY_PROP] as string;
     if (!tasksByOwner.has(owner)) {
       tasksByOwner.set(owner, []);
     }
@@ -179,7 +180,7 @@ export async function calculateQueueRankAsync(tasks: Task[]): Promise<ProcessedT
   const tasksByOwner = new Map<string, Task[]>();
   for (const task of tasks) {
     if (!isEligible(task)) continue;
-    const owner = task['Assignee'];
+    const owner = (task as any)[GROUP_BY_PROP] as string;
     if (!tasksByOwner.has(owner)) tasksByOwner.set(owner, []);
     tasksByOwner.get(owner)!.push(task);
   }
