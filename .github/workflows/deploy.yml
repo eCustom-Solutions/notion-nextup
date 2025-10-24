@@ -18,6 +18,6 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -Eeuo pipefail
-            sudo -u appuser bash -lc "REQUIRE_APPUSER=1 HEALTH_URL='http://127.0.0.1:4401/healthz' /opt/myapp/notion-nextup/scripts/deploy.sh"
+            sudo -u appuser bash -lc "REQUIRE_APPUSER=1 HEALTH_URL='http://127.0.0.1:4401/healthz' bash /opt/myapp/notion-nextup/scripts/deploy.sh"
 
 
