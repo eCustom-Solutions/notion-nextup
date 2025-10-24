@@ -49,7 +49,7 @@ if (Number.isNaN(WORKDAY_START_HOUR) || Number.isNaN(WORKDAY_END_HOUR) || WORKDA
 // - ALLOWLIST_MODE: 'people_db_has_user' to allow all People pages with a User set; otherwise legacy env/file allowlist
 export const TASK_OWNER_PROP: string = process.env.TASK_OWNER_PROP ?? 'Owner';
 export const TASK_WATCHER_PROP: string = process.env.TASK_WATCHER_PROP ?? 'Watcher';
-export const PEOPLE_DB_ID: string | undefined = process.env.PEOPLE_DB_ID;
+export const PEOPLE_DB_ID: string | undefined = process.env.PEOPLE_DB_ID ?? "1906824d550381adb0f0e38edd947e17";
 export const PEOPLE_USER_PROP: string = process.env.PEOPLE_USER_PROP ?? 'User';
 export const GROUP_BY_PROP: string = process.env.GROUP_BY_PROP ?? 'Owner';
 export const ALLOWLIST_MODE: 'people_db_has_user' | 'legacy' = (process.env.ALLOWLIST_MODE as any) === 'people_db_has_user' ? 'people_db_has_user' : 'legacy';
