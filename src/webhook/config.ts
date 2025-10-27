@@ -40,9 +40,24 @@ export const ESTIMATED_DAYS_REMAINING_PROP: string = process.env.ESTIMATED_DAYS_
 // Author classification toggles (for Automation webhook payloads)
 export const ALLOW_BOT_EVENTS: boolean = String(process.env.ALLOW_BOT_EVENTS ?? 'false') === 'true';
 export const ALLOW_AUTOMATION_EVENTS: boolean = String(process.env.ALLOW_AUTOMATION_EVENTS ?? 'false') === 'true';
+export const DEBUG_ROUTING: boolean = String(process.env.DEBUG_ROUTING ?? 'true') === 'true';
 
 if (Number.isNaN(WORKDAY_START_HOUR) || Number.isNaN(WORKDAY_END_HOUR) || WORKDAY_END_HOUR <= WORKDAY_START_HOUR || WORKDAY_START_HOUR < 0 || WORKDAY_END_HOUR > 24) {
   console.warn('[config] Invalid workday hours; falling back to 08:00–16:00');
   (global as any).__WORKDAY_START_HOUR = 8;
   (global as any).__WORKDAY_END_HOUR = 16;
 }
+
+// People/Owner migration configuration
+// - TASK_OWNER_PROP: relation on Tasks DB that points to People DB (default: 'Owner')
+// - TASK_WATCHER_PROP: optional additional people property (default: 'Watcher')
+// - PEOPLE_DB_ID: the Notion database id of the People DB
+// - PEOPLE_USER_PROP: people property on the People DB that holds the actual Notion user (default: 'User')
+// - GROUP_BY_PROP: which task string field we group by in ranking/projection (default: 'Assignee' for legacy, can be 'Owner')
+// - ALLOWLIST_MODE: 'people_db_has_user' to allow all People pages with a User set; otherwise legacy env/file allowlist
+export const TASK_OWNER_PROP: string = process.env.TASK_OWNER_PROP ?? 'Owner';
+export const TASK_WATCHER_PROP: string = process.env.TASK_WATCHER_PROP ?? 'Watcher';
+export const PEOPLE_DB_ID: string | undefined = process.env.PEOPLE_DB_ID ?? "1906824d550381adb0f0e38edd947e17";
+export const PEOPLE_USER_PROP: string = process.env.PEOPLE_USER_PROP ?? 'User';
+export const GROUP_BY_PROP: string = process.env.GROUP_BY_PROP ?? 'Owner';
+export const ALLOWLIST_MODE: 'people_db_has_user' | 'legacy' = (process.env.ALLOWLIST_MODE as any) === 'people_db_has_user' ? 'people_db_has_user' : 'legacy';
