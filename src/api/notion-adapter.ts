@@ -173,9 +173,11 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
         if (typeof hoursRem === 'number') {
           estRem = hoursRem / workdayHours;
           estDays = estRem; // fallback if only remaining is present
+          console.log(`[estimate] Using hours-remaining for "${title}": ${hoursRem}h → ${estRem.toFixed(2)} days (workdayHours=${workdayHours})`);
         } else if (typeof hours === 'number') {
           estDays = hours / workdayHours;
           estRem = estDays; // fallback if only total is present
+          console.log(`[estimate] Using hours(total) for "${title}": ${hours}h → ${estDays.toFixed(2)} days (workdayHours=${workdayHours})`);
         }
       }
 
@@ -183,6 +185,7 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
       if (estDays === 0 && estRem === 0) {
         estDays = props[ESTIMATED_DAYS_PROP]?.number ?? 0;
         estRem = props[ESTIMATED_DAYS_REMAINING_PROP]?.number ?? estDays;
+        console.log(`[estimate] Using legacy days for "${title}": estDays=${estDays}, estRem=${estRem}`);
       }
       const dueDate = props['Due']?.date?.start
         ? new Date(props['Due'].date.start).toLocaleDateString('en-US', { 
