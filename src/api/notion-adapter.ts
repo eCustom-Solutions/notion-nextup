@@ -14,6 +14,7 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 import { findUserUUID } from './user-lookup';
+import { GROUP_BY_PROP, TASK_OWNER_PROP, PEOPLE_DB_ID, PEOPLE_USER_PROP, DEBUG_ROUTING } from '../webhook/config';
 
 /**
  * Loads tasks from Notion database
@@ -21,6 +22,47 @@ import { findUserUUID } from './user-lookup';
 export async function loadTasks(databaseId: string, userFilter?: string): Promise<Task[]> {
   const tasks: Task[] = [];
   let cursor: string | undefined = undefined;
+  
+  // Helper: resolve People page id for a given Notion user UUID via People DB
+  async function resolvePeoplePageIdForUser(userUuid: string): Promise<string | null> {
+    if (!PEOPLE_DB_ID) {
+      console.log('[resolvePeople] PEOPLE_DB_ID not set');
+      return null;
+    }
+    try {
+      const notionClient = await notion.databases();
+      const queryParams = {
+        database_id: PEOPLE_DB_ID,
+        page_size: 1,
+        filter: { property: PEOPLE_USER_PROP, people: { contains: userUuid } } as any,
+      };
+      console.log(`[resolvePeople] Querying People DB with config ${JSON.stringify({
+        PEOPLE_DB_ID,
+        PEOPLE_USER_PROP,
+        userUuid
+      })}`);
+      console.log(`[resolvePeople] Query params: ${JSON.stringify(queryParams)}`);
+      const res: any = await notionClient.query(queryParams);
+      console.log(`[resolvePeople] Response meta: ${JSON.stringify({ has_more: res?.has_more, results_count: res?.results?.length ?? 0 })}`);
+      const pg = (res?.results ?? [])[0];
+      if (pg) {
+        console.log(`[resolvePeople] Found People page: ${pg.id}`);
+      } else {
+        console.log(`[resolvePeople] No People page found for UUID: ${userUuid}`);
+      }
+      return pg?.id ?? null;
+    } catch (e: any) {
+      console.error(`[resolvePeople] Error querying People DB: ${JSON.stringify({
+        name: e?.name,
+        message: e?.message,
+        code: e?.code,
+        status: e?.status,
+        body: e?.body,
+        stack: e?.stack,
+      })}`);
+      return null;
+    }
+  }
 
   do {
     const notionClient = await notion.databases();
@@ -45,10 +87,30 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
     if (userFilter) {
       const userUUID = await findUserUUID(userFilter);
       if (userUUID) {
-        filterConditions.push({
-          property: 'Assignee',
-          people: { contains: userUUID }
-        });
+        if (GROUP_BY_PROP === 'Owner') {
+          console.log(`[load] Owner mode enabled; attempting People→User resolution ${JSON.stringify({
+            userUUID,
+            TASK_OWNER_PROP,
+            PEOPLE_DB_ID_present: !!PEOPLE_DB_ID,
+            PEOPLE_USER_PROP
+          })}`);
+          const peoplePageId = await resolvePeoplePageIdForUser(userUUID);
+          if (peoplePageId) {
+            filterConditions.push({
+              property: TASK_OWNER_PROP,
+              relation: { contains: peoplePageId }
+            } as any);
+            console.log(`[load] Using Owner relation filter with peoplePageId ${peoplePageId}`);
+          } else {
+            console.warn(`⚠️ Could not resolve People page for user UUID ${userUUID}; falling back to unfiltered load`);
+          }
+        } else {
+          filterConditions.push({
+            property: 'Assignee',
+            people: { contains: userUUID }
+          });
+          console.log(`[load] Using legacy Assignee people filter for ${userUUID}`);
+        }
       } else {
         console.warn(`⚠️ Could not find UUID for user: ${userFilter}. Falling back to client-side filtering.`);
       }
@@ -61,15 +123,41 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
       queryParams.filter = { and: filterConditions };
     }
 
-    const res = await notionClient.query(queryParams);
+    let res: any;
+    try {
+      if (DEBUG_ROUTING) {
+        console.log('[load] Querying tasks with params:', JSON.stringify(queryParams));
+      }
+      res = await notionClient.query(queryParams);
+    } catch (e: any) {
+      const errInfo = {
+        name: e?.name,
+        message: e?.message,
+        code: e?.code,
+        status: e?.status,
+        body: e?.body,
+      };
+      console.error('[load] Notion query failed', errInfo);
+      // Abort load gracefully with whatever we have so far
+      return tasks;
+    }
     
     for (const page of res.results) {
       if ((page as any).archived === true) continue;
       // Extract properties from Notion page
       const props = (page as any).properties;
       const title = props['Name']?.title?.[0]?.plain_text ?? '';
-      const ownerPeople = props['Assignee']?.people ?? [];
-      const owner = ownerPeople[0]?.name ?? '';
+      // Resolve owner display name or key for grouping
+      let owner = '';
+      // Prefer Owner relation title (fallback to Assignee people name)
+      const ownerRel = props[TASK_OWNER_PROP]?.relation as Array<{ id: string }> | undefined;
+      if (ownerRel && ownerRel.length > 0) {
+        // Use the page id as owner key if no title field present; UI-only name map can be resolved upstream if needed
+        owner = ownerRel[0].id;
+      } else {
+        const ownerPeople = props['Assignee']?.people ?? [];
+        owner = ownerPeople[0]?.name ?? '';
+      }
       const status = props['Status (IT)']?.status?.name ?? '';
       // Prefer hours-first staging properties (convert hours → days) when enabled
       const workdayHours = WORKDAY_END_HOUR - WORKDAY_START_HOUR;
@@ -145,7 +233,9 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
       tasks.push({
         pageId: page.id,
         Name: title,
+        // Store owner under both keys during transition for compatibility
         'Assignee': owner,
+        'Owner': owner,
         'Status (IT)': status,
         'Estimated Days': estDays,
         'Estimated Days Remaining': estRem,
@@ -179,6 +269,23 @@ export async function clearExcludedQueueRanksForUser(
   let cursor: string | undefined = undefined;
   const userUUID = await findUserUUID(userFilter);
 
+  // Local helper: resolve People page id for a Notion user UUID
+  async function resolvePeoplePageIdForUserUuid(userUuid: string): Promise<string | null> {
+    if (!PEOPLE_DB_ID) return null;
+    try {
+      const notionClient = await notion.databases();
+      const res: any = await notionClient.query({
+        database_id: PEOPLE_DB_ID,
+        page_size: 1,
+        filter: { property: PEOPLE_USER_PROP, people: { contains: userUuid } } as any,
+      });
+      const pg = (res?.results ?? [])[0];
+      return pg?.id ?? null;
+    } catch {
+      return null;
+    }
+  }
+
   do {
     const notionClient = await notion.databases();
 
@@ -192,7 +299,16 @@ export async function clearExcludedQueueRanksForUser(
     ];
 
     if (userUUID) {
-      andFilters.push({ property: 'Assignee', people: { contains: userUUID } });
+      if (GROUP_BY_PROP === 'Owner') {
+        const peoplePageId = await resolvePeoplePageIdForUserUuid(userUUID);
+        if (peoplePageId) {
+          andFilters.push({ property: TASK_OWNER_PROP, relation: { contains: peoplePageId } } as any);
+        } else {
+          console.warn(`⚠️ Could not resolve People page for user UUID ${userUUID}; clearing ranks without owner filter`);
+        }
+      } else {
+        andFilters.push({ property: 'Assignee', people: { contains: userUUID } });
+      }
     }
 
     const queryParams: any = {
@@ -326,13 +442,30 @@ export async function updateQueueRanksSurgically(
       }))
     ];
 
-    // Add user filter
+    // Add user filter (Owner relation preferred)
     const userUUID = await findUserUUID(userFilter);
     if (userUUID) {
-      filterConditions.push({
-        property: 'Assignee',
-        people: { contains: userUUID }
-      });
+      if (GROUP_BY_PROP === 'Owner') {
+        // Resolve People page id for this user's UUID
+        try {
+          const peopleDb = await notion.databases();
+          const res: any = await peopleDb.query({
+            database_id: PEOPLE_DB_ID,
+            page_size: 1,
+            filter: { property: PEOPLE_USER_PROP, people: { contains: userUUID } } as any,
+          });
+          const peoplePageId: string | undefined = (res?.results ?? [])[0]?.id;
+          if (peoplePageId) {
+            filterConditions.push({ property: TASK_OWNER_PROP, relation: { contains: peoplePageId } } as any);
+          } else {
+            console.warn(`⚠️ Could not resolve People page for user UUID ${userUUID}; clearing without owner filter`);
+          }
+        } catch (e) {
+          console.warn('⚠️ Failed resolving People page for Owner filter:', e);
+        }
+      } else {
+        filterConditions.push({ property: 'Assignee', people: { contains: userUUID } });
+      }
     } else {
       console.warn(`⚠️ Could not find UUID for user: ${userFilter}. Falling back to client-side filtering.`);
     }
