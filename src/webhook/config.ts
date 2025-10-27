@@ -3,6 +3,10 @@ import path from 'path';
 // Load environment variables once at startup from repo root .env explicitly
 dotenv.config({ path: path.resolve(__dirname, '../../..', '.env') });
 
+// Notion API
+export const NOTION_API_KEY: string | undefined = process.env.NOTION_API_KEY ?? process.env.NOTION_TOKEN;
+export const NOTION_TOKEN: string | undefined = process.env.NOTION_TOKEN;
+
 // Server / Webhook
 export const PORT: number = Number(process.env.PORT ?? 443);
 export const DEBOUNCE_MS: number = Number(process.env.WEBHOOK_DEBOUNCE_MS ?? 10_000);
