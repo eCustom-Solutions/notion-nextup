@@ -21,9 +21,9 @@
     "test:notion": "ts-node src/tests/notion-integration.ts",
     "start:webhook": "ts-node src/webhook/http/prod-server.ts",
     "start:demo": "ts-node src/webhook/http/demo-server.ts",
-    "estimated-hours:copy-demo": "ts-node scripts/estimated-hours/copy-demo-estimated-days.ts",
-    "estimated-hours:convert-days-to-hours": "ts-node scripts/estimated-hours/convert-days-to-hours.ts",
-    "estimated-hours:convert-estimate-to-hours": "ts-node scripts/estimated-hours/convert-estimate-to-hours.ts"
+    "estimated-hours:copy-demo": "ts-node scripts/copy-demo-estimated-days.ts",
+    "estimated-hours:convert-days-to-hours": "ts-node scripts/convert-days-to-hours.ts",
+    "estimated-hours:convert-estimate-to-hours": "ts-node scripts/convert-estimate-to-hours.ts"
   },
   "devDependencies": {
     "@types/dotenv": "^6.1.1",
