@@ -1,9 +1,10 @@
 import { Client } from '@notionhq/client';
 import { TokenBucket } from '../utils/token-bucket';
+import { NOTION_API_KEY } from '../webhook/config';
 
 // Create the base Notion client
 const notion = new Client({
-  auth: process.env.NOTION_API_KEY,
+  auth: NOTION_API_KEY,
 });
 
 // Throttled wrapper to enforce rate limits

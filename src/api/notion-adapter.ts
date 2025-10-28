@@ -1,11 +1,18 @@
 import notion from './client';
 import { Task, ProcessedTask, EXCLUDED_STATUSES } from '../core/types';
+import {
+  ESTIMATED_HOURS_PROP,
+  ESTIMATED_HOURS_REMAINING_PROP,
+  WORKDAY_START_HOUR,
+  WORKDAY_END_HOUR,
+} from '../webhook/config';
 
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 import { findUserUUID } from './user-lookup';
 import { GROUP_BY_PROP, TASK_OWNER_PROP, PEOPLE_DB_ID, PEOPLE_USER_PROP, DEBUG_ROUTING } from '../webhook/config';
+import { resolvePeoplePageIdForUserUuid } from '../webhook/people';
 
 /**
  * Loads tasks from Notion database
@@ -14,22 +21,7 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
   const tasks: Task[] = [];
   let cursor: string | undefined = undefined;
   
-  // Helper: resolve People page id for a given Notion user UUID via People DB
-  async function resolvePeoplePageIdForUser(userUuid: string): Promise<string | null> {
-    if (!PEOPLE_DB_ID) return null;
-    try {
-      const notionClient = await notion.databases();
-      const res: any = await notionClient.query({
-        database_id: PEOPLE_DB_ID,
-        page_size: 1,
-        filter: { property: PEOPLE_USER_PROP, people: { contains: userUuid } } as any,
-      });
-      const pg = (res?.results ?? [])[0];
-      return pg?.id ?? null;
-    } catch {
-      return null;
-    }
-  }
+  // Delegate People page id resolution to shared helper
 
   do {
     const notionClient = await notion.databases();
@@ -55,12 +47,19 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
       const userUUID = await findUserUUID(userFilter);
       if (userUUID) {
         if (GROUP_BY_PROP === 'Owner') {
-          const peoplePageId = await resolvePeoplePageIdForUser(userUUID);
+          console.log(`[load] Owner mode enabled; attempting People→User resolution ${JSON.stringify({
+            userUUID,
+            TASK_OWNER_PROP,
+            PEOPLE_DB_ID_present: !!PEOPLE_DB_ID,
+            PEOPLE_USER_PROP
+          })}`);
+          const peoplePageId = await resolvePeoplePageIdForUserUuid(userUUID);
           if (peoplePageId) {
             filterConditions.push({
               property: TASK_OWNER_PROP,
               relation: { contains: peoplePageId }
             } as any);
+            console.log(`[load] Using Owner relation filter with peoplePageId ${peoplePageId}`);
           } else {
             console.warn(`⚠️ Could not resolve People page for user UUID ${userUUID}; falling back to unfiltered load`);
           }
@@ -69,6 +68,7 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
             property: 'Assignee',
             people: { contains: userUUID }
           });
+          console.log(`[load] Using legacy Assignee people filter for ${userUUID}`);
         }
       } else {
         console.warn(`⚠️ Could not find UUID for user: ${userFilter}. Falling back to client-side filtering.`);
@@ -118,8 +118,28 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
         owner = ownerPeople[0]?.name ?? '';
       }
       const status = props['Status (IT)']?.status?.name ?? '';
-      const estDays = props['Estimated Days']?.number ?? 0;
-      const estRem = props['Estimated Days Remaining']?.number ?? estDays;
+      // Hours-only mode: require hours or hours-remaining, convert to days
+      const workdayHours = WORKDAY_END_HOUR - WORKDAY_START_HOUR;
+      const hours = props[ESTIMATED_HOURS_PROP]?.number;
+      const hoursRem = props[ESTIMATED_HOURS_REMAINING_PROP]?.number;
+      const hasHours = typeof hours === 'number';
+      const hasHoursRem = typeof hoursRem === 'number';
+
+      let estDays = 0;
+      let estRem = 0;
+      if (hasHoursRem) {
+        estRem = (hoursRem as number) / workdayHours;
+        estDays = estRem;
+        console.log(`[estimate] Using hours-remaining for "${title}": ${hoursRem}h → ${estRem.toFixed(2)} days (workdayHours=${workdayHours})`);
+      } else if (hasHours) {
+        estDays = (hours as number) / workdayHours;
+        estRem = estDays;
+        console.log(`[estimate] Using hours(total) for "${title}": ${hours}h → ${estDays.toFixed(2)} days (workdayHours=${workdayHours})`);
+      } else {
+        // No hours present – skip task entirely (hours-only mode)
+        console.log(`[estimate] Skipping "${title}" – no ${ESTIMATED_HOURS_REMAINING_PROP} or ${ESTIMATED_HOURS_PROP} set`);
+        continue;
+      }
       const dueDate = props['Due']?.date?.start
         ? new Date(props['Due'].date.start).toLocaleDateString('en-US', { 
             month: 'long', 
@@ -173,8 +193,8 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
         'Assignee': owner,
         'Owner': owner,
         'Status (IT)': status,
-        'Estimated Days': estDays,
-        'Estimated Days Remaining': estRem,
+        'Estimate (days)': estDays,
+        'Estimate Remaining (days)': estRem,
         'Due': dueDate,
         'Priority': priority,
         'Parent Task': parentTask,
@@ -205,24 +225,11 @@ export async function clearExcludedQueueRanksForUser(
   let cursor: string | undefined = undefined;
   const userUUID = await findUserUUID(userFilter);
 
-  // Local helper: resolve People page id for a Notion user UUID
-  async function resolvePeoplePageIdForUserUuid(userUuid: string): Promise<string | null> {
-    if (!PEOPLE_DB_ID) return null;
-    try {
-      const notionClient = await notion.databases();
-      const res: any = await notionClient.query({
-        database_id: PEOPLE_DB_ID,
-        page_size: 1,
-        filter: { property: PEOPLE_USER_PROP, people: { contains: userUuid } } as any,
-      });
-      const pg = (res?.results ?? [])[0];
-      return pg?.id ?? null;
-    } catch {
-      return null;
-    }
-  }
-
   do {
+    if (cleared >= limit) {
+      // Nothing more to do; avoid issuing another query
+      break;
+    }
     const notionClient = await notion.databases();
 
     const statusFilters = EXCLUDED_STATUSES.map(status => ({
@@ -384,13 +391,7 @@ export async function updateQueueRanksSurgically(
       if (GROUP_BY_PROP === 'Owner') {
         // Resolve People page id for this user's UUID
         try {
-          const peopleDb = await notion.databases();
-          const res: any = await peopleDb.query({
-            database_id: PEOPLE_DB_ID,
-            page_size: 1,
-            filter: { property: PEOPLE_USER_PROP, people: { contains: userUUID } } as any,
-          });
-          const peoplePageId: string | undefined = (res?.results ?? [])[0]?.id;
+          const peoplePageId = await resolvePeoplePageIdForUserUuid(userUUID);
           if (peoplePageId) {
             filterConditions.push({ property: TASK_OWNER_PROP, relation: { contains: peoplePageId } } as any);
           } else {

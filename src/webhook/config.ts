@@ -3,6 +3,10 @@ import path from 'path';
 // Load environment variables once at startup from repo root .env explicitly
 dotenv.config({ path: path.resolve(__dirname, '../../..', '.env') });
 
+// Notion API
+export const NOTION_API_KEY: string | undefined = process.env.NOTION_API_KEY ?? process.env.NOTION_TOKEN;
+export const NOTION_TOKEN: string | undefined = process.env.NOTION_TOKEN;
+
 // Server / Webhook
 export const PORT: number = Number(process.env.PORT ?? 443);
 export const DEBOUNCE_MS: number = Number(process.env.WEBHOOK_DEBOUNCE_MS ?? 10_000);
@@ -30,10 +34,13 @@ export const WORKDAY_START_HOUR: number = Number(process.env.WORKDAY_START_HOUR 
 export const WORKDAY_END_HOUR: number = Number(process.env.WORKDAY_END_HOUR ?? 16);
 export const TIMEZONE: string = process.env.TIMEZONE ?? 'America/Los_Angeles';
 
+export const ESTIMATED_HOURS_PROP: string = process.env.ESTIMATED_HOURS_PROP ?? 'Estimated Hours';
+export const ESTIMATED_HOURS_REMAINING_PROP: string = process.env.ESTIMATED_HOURS_REMAINING_PROP ?? 'Estimated Hours Remaining';
+
 // Author classification toggles (for Automation webhook payloads)
 export const ALLOW_BOT_EVENTS: boolean = String(process.env.ALLOW_BOT_EVENTS ?? 'false') === 'true';
 export const ALLOW_AUTOMATION_EVENTS: boolean = String(process.env.ALLOW_AUTOMATION_EVENTS ?? 'false') === 'true';
-export const DEBUG_ROUTING: boolean = String(process.env.DEBUG_ROUTING ?? 'true') === 'true';
+export const DEBUG_ROUTING: boolean = String(process.env.DEBUG_ROUTING ?? 'false') === 'true';
 
 if (Number.isNaN(WORKDAY_START_HOUR) || Number.isNaN(WORKDAY_END_HOUR) || WORKDAY_END_HOUR <= WORKDAY_START_HOUR || WORKDAY_START_HOUR < 0 || WORKDAY_END_HOUR > 24) {
   console.warn('[config] Invalid workday hours; falling back to 08:00–16:00');
