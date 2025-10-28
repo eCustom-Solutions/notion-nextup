@@ -5,8 +5,8 @@ export interface Task {
   'Assignee': string;
   'Owner'?: string;
   'Status (IT)': string;
-  'Estimated Days': number;
-  'Estimated Days Remaining'?: number;
+  'Estimate (days)': number;
+  'Estimate Remaining (days)'?: number;
   'Due'?: string;
   'Priority'?: string;
   'Parent Task'?: string;
@@ -23,7 +23,7 @@ export interface ProcessedTask extends Task {
   queue_rank: number;
   queue_score: number;
   'Projected Completion': string;
-  'Estimated Days Remaining': number;
+  'Estimate Remaining (days)': number;
   pageId: string; // Required for Notion API writeback
 }
 

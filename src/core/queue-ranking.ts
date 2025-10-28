@@ -131,7 +131,7 @@ export function calculateQueueRank(tasks: Task[]): ProcessedTask[] {
     console.log('\n🧮 Calculating scores for each task:');
     const tasksWithScores = ownerTasks.map(task => {
       const score = calculateQueueScore(task);
-      console.log(`  "${task.Name}" - Score: ${score} (Priority: ${task['Priority']}, Due: ${task['Due']}, Est Days: ${task['Estimated Days']}, Importance: ${task['Importance Rollup'] || 0})`);
+      console.log(`  "${task.Name}" - Score: ${score} (Priority: ${task['Priority']}, Due: ${task['Due']}, Est Days: ${(task as any)['Estimate (days)']}, Importance: ${task['Importance Rollup'] || 0})`);
       return { task, score };
     });
     
@@ -195,7 +195,7 @@ export async function calculateQueueRankAsync(tasks: Task[]): Promise<ProcessedT
     console.log('\n🧮 Calculating scores for each task:');
     const tasksWithScores = ownerTasks.map(task => {
       const score = calculateQueueScore(task);
-      console.log(`  "${task.Name}" - Score: ${score} (Priority: ${task['Priority']}, Due: ${task['Due']}, Est Days: ${task['Estimated Days']}, Importance: ${task['Importance Rollup'] || 0})`);
+      console.log(`  "${task.Name}" - Score: ${score} (Priority: ${task['Priority']}, Due: ${task['Due']}, Est Days: ${(task as any)['Estimate (days)']}, Importance: ${task['Importance Rollup'] || 0})`);
       return { task, score };
     });
 

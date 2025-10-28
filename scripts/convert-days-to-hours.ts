@@ -3,13 +3,14 @@
 import * as dotenv from 'dotenv';
 dotenv.config();
 
-import notion from '../../src/api/client';
-import { findUserUUID } from '../../src/api/user-lookup';
-import { TASK_OWNER_PROP } from '../../src/webhook/config';
-import { resolvePeoplePageIdForUserUuid } from '../../src/webhook/people';
+import notion from '../src/api/client';
+import { findUserUUID } from '../src/api/user-lookup';
+import { TASK_OWNER_PROP } from '../src/webhook/config';
+import { resolvePeoplePageIdForUserUuid } from '../src/webhook/people';
 
 interface ScriptOptions {
   userName: string;
+  allUsers: boolean;
   daysProperty: string;
   targetProperty: string;
   workdayHours?: number;
@@ -22,6 +23,7 @@ const DEFAULT_TARGET_PROPERTY = 'Estimated Hours (Staging)';
 
 function parseArgs(argv: string[]): ScriptOptions {
   let userName = DEFAULT_USER;
+  let allUsers = false;
   let daysProperty = DEFAULT_DAYS_PROPERTY;
   let targetProperty = DEFAULT_TARGET_PROPERTY;
   let workdayHours: number | undefined;
@@ -31,6 +33,8 @@ function parseArgs(argv: string[]): ScriptOptions {
     const arg = argv[i];
     if (arg === '--user' && argv[i + 1]) {
       userName = argv[++i];
+    } else if (arg === '--all-users') {
+      allUsers = true;
     } else if (arg === '--days-property' && argv[i + 1]) {
       daysProperty = argv[++i];
     } else if (arg === '--target-property' && argv[i + 1]) {
@@ -44,7 +48,7 @@ function parseArgs(argv: string[]): ScriptOptions {
     }
   }
 
-  return { userName, daysProperty, targetProperty, workdayHours, dryRun };
+  return { userName, allUsers, daysProperty, targetProperty, workdayHours, dryRun };
 }
 
 function resolveWorkdayHours(explicit?: number): number {
@@ -64,7 +68,7 @@ function nearlyEqual(a: number, b: number, eps = 1e-6): boolean {
 }
 
 async function main(): Promise<void> {
-  const { userName, daysProperty, targetProperty, workdayHours: cliWorkdayHours, dryRun } = parseArgs(process.argv.slice(2));
+  const { userName, allUsers, daysProperty, targetProperty, workdayHours: cliWorkdayHours, dryRun } = parseArgs(process.argv.slice(2));
   const databaseId = process.env.NOTION_DB_ID;
 
   if (!databaseId) {
@@ -73,13 +77,16 @@ async function main(): Promise<void> {
   }
 
   const workdayHours = resolveWorkdayHours(cliWorkdayHours);
-  const userUUID = await findUserUUID(userName);
-  if (!userUUID) {
-    console.error(`❌ Unable to resolve user UUID for "${userName}". Aborting.`);
-    process.exit(1);
+  let userUUID: string | null | undefined = undefined;
+  if (!allUsers) {
+    userUUID = await findUserUUID(userName);
+    if (!userUUID) {
+      console.error(`❌ Unable to resolve user UUID for "${userName}". Aborting.`);
+      process.exit(1);
+    }
   }
 
-  console.log(`🔄 Converting days → hours for ${userName} (${userUUID})`);
+  console.log(`🔄 Converting days → hours for ${allUsers ? 'ALL USERS' : `${userName} (${userUUID})`}`);
   console.log(`   Source (days): "${daysProperty}"`);
   console.log(`   Target (hours): "${targetProperty}"`);
   console.log(`   Workday hours: ${workdayHours}`);
@@ -102,13 +109,15 @@ async function main(): Promise<void> {
       page_size: 100,
       start_cursor: cursor,
     };
-    const peoplePageId = await resolvePeoplePageIdForUserUuid(userUUID);
-    if (peoplePageId) {
-      query.filter = { property: TASK_OWNER_PROP, relation: { contains: peoplePageId } } as any;
-      console.log(`🔎 Filtering by Owner relation (${TASK_OWNER_PROP}) contains ${peoplePageId}`);
-    } else {
-      query.filter = { property: 'Assignee', people: { contains: userUUID } };
-      console.log('🔎 Filtering by legacy Assignee people contains', userUUID);
+    if (!allUsers) {
+      const peoplePageId = await resolvePeoplePageIdForUserUuid(userUUID as string);
+      if (peoplePageId) {
+        query.filter = { property: TASK_OWNER_PROP, relation: { contains: peoplePageId } } as any;
+        console.log(`🔎 Filtering by Owner relation (${TASK_OWNER_PROP}) contains ${peoplePageId}`);
+      } else {
+        query.filter = { property: 'Assignee', people: { contains: userUUID as string } };
+        console.log('🔎 Filtering by legacy Assignee people contains', userUUID as string);
+      }
     }
 
     const response = await db.query(query);

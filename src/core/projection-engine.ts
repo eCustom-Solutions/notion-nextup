@@ -43,8 +43,8 @@ export async function assignProjections(rankedTasks: RankedTask[]): Promise<Proc
 
     for (let i = 0; i < sorted.length; i++) {
       const task = sorted[i];
-      const rawEstRemaining = task['Estimated Days Remaining'];
-      const rawEstDays = task['Estimated Days'];
+      const rawEstRemaining = (task as any)['Estimate Remaining (days)'];
+      const rawEstDays = (task as any)['Estimate (days)'];
       // Single source of truth for estimate in "days". Upstream code may have started with hours
       // (staging) and converted to days for us; if not present, fall back to legacy days.
       const estimatedDaysRemaining = (rawEstRemaining ?? rawEstDays ?? 0);
@@ -72,7 +72,7 @@ export async function assignProjections(rankedTasks: RankedTask[]): Promise<Proc
             processed.push({
               ...task,
               'Projected Completion': inherited,
-              'Estimated Days Remaining': estimatedDaysRemaining,
+              'Estimate Remaining (days)': estimatedDaysRemaining,
               pageId: task.pageId || '',
             } as ProcessedTask);
             continue;
@@ -114,7 +114,7 @@ export async function assignProjections(rankedTasks: RankedTask[]): Promise<Proc
       processed.push({
         ...task,
         'Projected Completion': projectedCompletion,
-        'Estimated Days Remaining': estimatedDaysRemaining,
+        'Estimate Remaining (days)': estimatedDaysRemaining,
         pageId: task.pageId || '',
       } as ProcessedTask);
     }
