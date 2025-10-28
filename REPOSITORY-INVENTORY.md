@@ -102,3 +102,87 @@ This repo powers Notion NextUp: a webhook + CLI system that ranks tasks per owne
 - Branch feat/estimated-hours is hours-only, Owner-first, with successful dry-run and live validations for the demo user.
 
 
+
+
+
+
+Here’s a focused walkthrough of `src/api` and how each module fits together.
+
+### client.ts
+- Purpose: Single Notion client with global rate limiting.
+- How it works:
+  - Auth from config (`NOTION_API_KEY`).
+  - Token bucket guard (capacity 3, 3/sec) for every call.
+  - Thin wrappers:
+    - `databases().query|retrieve`
+    - `pages().update|retrieve`
+    - `users().retrieve|me`
+- Why it matters: Central throttle; you don’t have to worry about 429s in callers.
+
+### notion-adapter.ts
+- Purpose: Load, filter, and write tasks to the Tasks DB (the main integration surface).
+- Key functions:
+  - loadTasks(databaseId, userFilter?)
+    - Filters:
+      - Status: excludes all `EXCLUDED_STATUSES` (e.g., Backlogged, Done, etc.).
+      - User scope:
+        - `GROUP_BY_PROP === 'Owner'`: resolve the People page id via People DB (`resolvePeoplePageIdForUserUuid`) and filter by `TASK_OWNER_PROP` relation contains that page id.
+        - Legacy fallback: filter by `Assignee.people.contains(userUUID)`.
+    - Pagination: queries in a do/while with `page_size: 100`.
+    - Hours-only estimates:
+      - Reads `ESTIMATED_HOURS_REMAINING_PROP` (preferred) or `ESTIMATED_HOURS_PROP`.
+      - Converts hours → days using `(WORKDAY_END_HOUR - WORKDAY_START_HOUR)`.
+      - If neither hours field is present, the task is skipped (hours-only mode).
+    - Properties mapped on each Task:
+      - Title (`Name`), Owner (Owner relation id or Assignee’s name fallback), `Status (IT)`, `Estimated Days` (derived from hours), `Estimated Days Remaining`, `Due`, `Priority`, `Parent Task`, `Importance Rollup`, `Task Started Date`, `Projected Completion`, `Labels`, `Objective`, `pageId`.
+      - Transitional: sets both `Assignee` and `Owner` (string key used for grouping).
+    - Logging: Detailed `[load]`, `[estimate]`, and `[resolvePeople]` logs when `DEBUG_ROUTING=true`.
+  - updateQueueRanksSurgically(databaseId, userFilter, processedTasks)
+    - Step 1: Write queue rank and projected completion for all processed tasks.
+      - Verifies after update by retrieving page.
+      - Handles `validation_error` (archived) and `conflict_error` (retry loop).
+    - Step 2: Query and clear queue ranks for tasks that are no longer in the processed set (scoped by Owner when available).
+    - Step 3: Calls `clearExcludedQueueRanksForUser` to clear ranks on tasks now in excluded statuses.
+  - clearExcludedQueueRanksForUser(databaseId, userFilter, limit=50)
+    - Filters for pages with `Queue Rank` not empty, matching excluded statuses, scoped to the same user (Owner relation if possible).
+    - Sets `Queue Rank` to null, handling archived/conflict cases.
+- Why it matters:
+  - Centralizes all DB-level filtering and surgical writes.
+  - Now enforces hours-only semantics consistently across CLI and webhook paths.
+
+### objective-fanout.ts
+- Purpose: Determine which owners are impacted by an Objective page change.
+- How it works:
+  - Scans candidate relations to find Tasks linked to the given Objective.
+  - Prefers `TASK_OWNER_PROP` relation to collect owner ids; legacy Assignee fallback exists.
+  - Returns unique list of identifiers (uid/name), currently uses page ids as stand-ins if user resolution isn’t available (not critical to core flow).
+
+### objective-projection.ts
+- Purpose: Helper(s) supporting objective-linked projection behavior.
+- Typical usage: Supplement objective workflows if needed; core projections run in `src/core/projection-engine.ts`.
+
+### user-lookup.ts
+- Purpose: Resolve a person’s Notion user UUID by name.
+- How it works:
+  - Queries workspace users via Notion Users API; returns the UUID (used to scope DB queries and People DB lookups).
+- Why it matters:
+  - Bridges human-friendly names (CLI arg) to the UUID needed for DB-level filters and People DB mapping.
+
+### index.ts
+- Purpose: Barrel file re-exporting API surfaces for convenience.
+- Typical exports: adapter functions and client wrappers.
+
+### Cross-cutting behaviors
+- Rate limiting: All calls go through the throttled client.
+- Error handling: Logs `APIResponseError` details (name, code, status, body, stack) where updates might fail.
+- Logging: Controlled by config; `[resolvePeople]`, `[load]`, `[estimate]` traces make dry-runs/debugging transparent.
+- Config dependency:
+  - Hours props: `ESTIMATED_HOURS_PROP`, `ESTIMATED_HOURS_REMAINING_PROP`
+  - Workday window: `WORKDAY_START_HOUR`, `WORKDAY_END_HOUR`
+  - Owner/People: `GROUP_BY_PROP`, `TASK_OWNER_PROP`, `PEOPLE_DB_ID`, `PEOPLE_USER_PROP`
+  - `DEBUG_ROUTING` enables verbose traces
+
+What changed recently (hours-only + Owner)
+- Adapter no longer falls back to days; tasks without hours are skipped.
+- Owner scoping via People DB is the default; legacy Assignee filter remains as fallback.
+- Writeback remains surgical: only updates needed fields; cleans up queue ranks for stragglers/excluded statuses.

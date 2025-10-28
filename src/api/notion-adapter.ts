@@ -225,24 +225,11 @@ export async function clearExcludedQueueRanksForUser(
   let cursor: string | undefined = undefined;
   const userUUID = await findUserUUID(userFilter);
 
-  // Local helper: resolve People page id for a Notion user UUID
-  async function resolvePeoplePageIdForUserUuid(userUuid: string): Promise<string | null> {
-    if (!PEOPLE_DB_ID) return null;
-    try {
-      const notionClient = await notion.databases();
-      const res: any = await notionClient.query({
-        database_id: PEOPLE_DB_ID,
-        page_size: 1,
-        filter: { property: PEOPLE_USER_PROP, people: { contains: userUuid } } as any,
-      });
-      const pg = (res?.results ?? [])[0];
-      return pg?.id ?? null;
-    } catch {
-      return null;
-    }
-  }
-
   do {
+    if (cleared >= limit) {
+      // Nothing more to do; avoid issuing another query
+      break;
+    }
     const notionClient = await notion.databases();
 
     const statusFilters = EXCLUDED_STATUSES.map(status => ({
@@ -404,13 +391,7 @@ export async function updateQueueRanksSurgically(
       if (GROUP_BY_PROP === 'Owner') {
         // Resolve People page id for this user's UUID
         try {
-          const peopleDb = await notion.databases();
-          const res: any = await peopleDb.query({
-            database_id: PEOPLE_DB_ID,
-            page_size: 1,
-            filter: { property: PEOPLE_USER_PROP, people: { contains: userUUID } } as any,
-          });
-          const peoplePageId: string | undefined = (res?.results ?? [])[0]?.id;
+          const peoplePageId = await resolvePeoplePageIdForUserUuid(userUUID);
           if (peoplePageId) {
             filterConditions.push({ property: TASK_OWNER_PROP, relation: { contains: peoplePageId } } as any);
           } else {
