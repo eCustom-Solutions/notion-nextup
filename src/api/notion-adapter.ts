@@ -12,6 +12,7 @@ function sleep(ms: number): Promise<void> {
 }
 import { findUserUUID } from './user-lookup';
 import { GROUP_BY_PROP, TASK_OWNER_PROP, PEOPLE_DB_ID, PEOPLE_USER_PROP, DEBUG_ROUTING } from '../webhook/config';
+import { resolvePeoplePageIdForUserUuid } from '../webhook/people';
 
 /**
  * Loads tasks from Notion database
@@ -20,46 +21,7 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
   const tasks: Task[] = [];
   let cursor: string | undefined = undefined;
   
-  // Helper: resolve People page id for a given Notion user UUID via People DB
-  async function resolvePeoplePageIdForUser(userUuid: string): Promise<string | null> {
-    if (!PEOPLE_DB_ID) {
-      console.log('[resolvePeople] PEOPLE_DB_ID not set');
-      return null;
-    }
-    try {
-      const notionClient = await notion.databases();
-      const queryParams = {
-        database_id: PEOPLE_DB_ID,
-        page_size: 1,
-        filter: { property: PEOPLE_USER_PROP, people: { contains: userUuid } } as any,
-      };
-      console.log(`[resolvePeople] Querying People DB with config ${JSON.stringify({
-        PEOPLE_DB_ID,
-        PEOPLE_USER_PROP,
-        userUuid
-      })}`);
-      console.log(`[resolvePeople] Query params: ${JSON.stringify(queryParams)}`);
-      const res: any = await notionClient.query(queryParams);
-      console.log(`[resolvePeople] Response meta: ${JSON.stringify({ has_more: res?.has_more, results_count: res?.results?.length ?? 0 })}`);
-      const pg = (res?.results ?? [])[0];
-      if (pg) {
-        console.log(`[resolvePeople] Found People page: ${pg.id}`);
-      } else {
-        console.log(`[resolvePeople] No People page found for UUID: ${userUuid}`);
-      }
-      return pg?.id ?? null;
-    } catch (e: any) {
-      console.error(`[resolvePeople] Error querying People DB: ${JSON.stringify({
-        name: e?.name,
-        message: e?.message,
-        code: e?.code,
-        status: e?.status,
-        body: e?.body,
-        stack: e?.stack,
-      })}`);
-      return null;
-    }
-  }
+  // Delegate People page id resolution to shared helper
 
   do {
     const notionClient = await notion.databases();
@@ -91,7 +53,7 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
             PEOPLE_DB_ID_present: !!PEOPLE_DB_ID,
             PEOPLE_USER_PROP
           })}`);
-          const peoplePageId = await resolvePeoplePageIdForUser(userUUID);
+          const peoplePageId = await resolvePeoplePageIdForUserUuid(userUUID);
           if (peoplePageId) {
             filterConditions.push({
               property: TASK_OWNER_PROP,

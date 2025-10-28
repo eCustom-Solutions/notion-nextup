@@ -5,6 +5,8 @@ dotenv.config();
 
 import notion from '../../src/api/client';
 import { findUserUUID } from '../../src/api/user-lookup';
+import { TASK_OWNER_PROP } from '../../src/webhook/config';
+import { resolvePeoplePageIdForUserUuid } from '../../src/webhook/people';
 
 interface ScriptOptions {
   userName: string;
@@ -16,7 +18,7 @@ interface ScriptOptions {
 
 const DEFAULT_USER = 'Derious Vaughn';
 const DEFAULT_DAYS_PROPERTY = 'Estimated Days';
-const DEFAULT_TARGET_PROPERTY = 'Estimated Days (Staging)';
+const DEFAULT_TARGET_PROPERTY = 'Estimated Hours (Staging)';
 
 function parseArgs(argv: string[]): ScriptOptions {
   let userName = DEFAULT_USER;
@@ -85,6 +87,8 @@ async function main(): Promise<void> {
 
   const db = await notion.databases();
   const pagesClient = await notion.pages();
+  
+  // Use shared helper for People page resolution
 
   let cursor: string | undefined;
   let scanned = 0;
@@ -97,8 +101,15 @@ async function main(): Promise<void> {
       database_id: databaseId,
       page_size: 100,
       start_cursor: cursor,
-      filter: { property: 'Assignee', people: { contains: userUUID } },
     };
+    const peoplePageId = await resolvePeoplePageIdForUserUuid(userUUID);
+    if (peoplePageId) {
+      query.filter = { property: TASK_OWNER_PROP, relation: { contains: peoplePageId } } as any;
+      console.log(`🔎 Filtering by Owner relation (${TASK_OWNER_PROP}) contains ${peoplePageId}`);
+    } else {
+      query.filter = { property: 'Assignee', people: { contains: userUUID } };
+      console.log('🔎 Filtering by legacy Assignee people contains', userUUID);
+    }
 
     const response = await db.query(query);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -127,7 +138,8 @@ async function main(): Promise<void> {
 
       prepared++;
       if (dryRun) {
-        console.log(`• (dry-run) ${title} (${page.id}) — ${currentHours ?? '∅'}h → ${desiredHours}h`);
+        const prevHoursStr = typeof currentHours === 'number' ? `(prev hours: ${currentHours}h)` : '';
+        console.log(`• (dry-run) ${title} (${page.id}) — ${daysVal}d → ${desiredHours}h ${prevHoursStr}`.trim());
         continue;
       }
 
