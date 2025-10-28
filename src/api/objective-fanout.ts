@@ -1,4 +1,6 @@
 import notion from './client';
+import { TASK_OWNER_PROP } from '../webhook/config';
+import { resolveUserFromPeoplePageId } from '../webhook/people';
 
 export interface AssigneeRef {
   id: string;
@@ -54,19 +56,13 @@ export async function getAssigneesForObjective(
       relationTaskCount += results.length;
       for (const page of results) {
         const props = (page as any).properties || {};
-        // Prefer Owner→People.User resolution when available
-        const ownerRel = props['Owner']?.relation ?? [];
-        let uid: string | undefined;
-        let name: string | undefined;
+        const ownerRel = props[TASK_OWNER_PROP]?.relation ?? [];
         if (Array.isArray(ownerRel) && ownerRel.length > 0) {
-          // Caller will filter by allowlist later; here we cannot resolve People→User cheaply without extra calls
-          // So fallback to Assignee when present; otherwise skip fanout identity here
-        } else {
-          const people = props['Assignee']?.people ?? [];
-          uid = people[0]?.id;
-          name = people[0]?.name;
+          const ownerPageId = ownerRel[0].id as string;
+          const idName = await resolveUserFromPeoplePageId(ownerPageId);
+          if (idName && !unique.has(idName.id)) unique.set(idName.id, idName.name);
         }
-        if (uid && name && !unique.has(uid)) unique.set(uid, name);
+        // No legacy Assignee fallback; Owner-only mode
       }
 
       cursor = (res as any).has_more && (res as any).next_cursor ? (res as any).next_cursor : undefined;

@@ -21,4 +21,22 @@ export async function resolvePeoplePageIdForUserUuid(userUuid: string): Promise<
   }
 }
 
+/**
+ * Resolve a Notion user (id, name) from a People database page id by reading
+ * the configured PEOPLE_USER_PROP people property.
+ * Returns null if the property is empty or resolution fails.
+ */
+export async function resolveUserFromPeoplePageId(peoplePageId: string): Promise<{ id: string; name: string } | null> {
+  try {
+    const pages = await notion.pages();
+    const page: any = await pages.retrieve({ page_id: peoplePageId });
+    const ppl = page?.properties?.[PEOPLE_USER_PROP]?.people ?? [];
+    const id: string | undefined = ppl[0]?.id;
+    const name: string | undefined = ppl[0]?.name;
+    return id && name ? { id, name } : null;
+  } catch {
+    return null;
+  }
+}
+
 
