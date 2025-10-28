@@ -34,5 +34,5 @@ export interface RankedTask extends Task {
 
 // Constants
 export const EXCLUDED_STATUSES = ['Backlogged', 'Done', 'Live in Dev', 'Ready for QA', 'Live in Staging', 'Blocked'];
-export const REQUIRED_COLUMNS = ['Name', 'Status (IT)', 'Estimated Days'];
+export const REQUIRED_COLUMNS = ['Name', 'Status (IT)'];
 export const PRIORITY_MAP = { 'High': 0, 'Medium': 1, 'Low': 2, '': 3 }; 

@@ -1,11 +1,8 @@
 import notion from './client';
 import { Task, ProcessedTask, EXCLUDED_STATUSES } from '../core/types';
 import {
-  PREFER_ESTIMATED_HOURS_STAGING,
   ESTIMATED_HOURS_PROP,
   ESTIMATED_HOURS_REMAINING_PROP,
-  ESTIMATED_DAYS_PROP,
-  ESTIMATED_DAYS_REMAINING_PROP,
   WORKDAY_START_HOUR,
   WORKDAY_END_HOUR,
 } from '../webhook/config';
@@ -159,33 +156,27 @@ export async function loadTasks(databaseId: string, userFilter?: string): Promis
         owner = ownerPeople[0]?.name ?? '';
       }
       const status = props['Status (IT)']?.status?.name ?? '';
-      // Prefer hours-first staging properties (convert hours → days) when enabled
+      // Hours-only mode: require hours or hours-remaining, convert to days
       const workdayHours = WORKDAY_END_HOUR - WORKDAY_START_HOUR;
-      const preferHours = PREFER_ESTIMATED_HOURS_STAGING;
+      const hours = props[ESTIMATED_HOURS_PROP]?.number;
+      const hoursRem = props[ESTIMATED_HOURS_REMAINING_PROP]?.number;
+      const hasHours = typeof hours === 'number';
+      const hasHoursRem = typeof hoursRem === 'number';
 
       let estDays = 0;
       let estRem = 0;
-
-      if (preferHours) {
-        const hours = props[ESTIMATED_HOURS_PROP]?.number;
-        const hoursRem = props[ESTIMATED_HOURS_REMAINING_PROP]?.number;
-
-        if (typeof hoursRem === 'number') {
-          estRem = hoursRem / workdayHours;
-          estDays = estRem; // fallback if only remaining is present
-          console.log(`[estimate] Using hours-remaining for "${title}": ${hoursRem}h → ${estRem.toFixed(2)} days (workdayHours=${workdayHours})`);
-        } else if (typeof hours === 'number') {
-          estDays = hours / workdayHours;
-          estRem = estDays; // fallback if only total is present
-          console.log(`[estimate] Using hours(total) for "${title}": ${hours}h → ${estDays.toFixed(2)} days (workdayHours=${workdayHours})`);
-        }
-      }
-
-      // Fallback to legacy days properties when hours not preferred or not found
-      if (estDays === 0 && estRem === 0) {
-        estDays = props[ESTIMATED_DAYS_PROP]?.number ?? 0;
-        estRem = props[ESTIMATED_DAYS_REMAINING_PROP]?.number ?? estDays;
-        console.log(`[estimate] Using legacy days for "${title}": estDays=${estDays}, estRem=${estRem}`);
+      if (hasHoursRem) {
+        estRem = (hoursRem as number) / workdayHours;
+        estDays = estRem;
+        console.log(`[estimate] Using hours-remaining for "${title}": ${hoursRem}h → ${estRem.toFixed(2)} days (workdayHours=${workdayHours})`);
+      } else if (hasHours) {
+        estDays = (hours as number) / workdayHours;
+        estRem = estDays;
+        console.log(`[estimate] Using hours(total) for "${title}": ${hours}h → ${estDays.toFixed(2)} days (workdayHours=${workdayHours})`);
+      } else {
+        // No hours present – skip task entirely (hours-only mode)
+        console.log(`[estimate] Skipping "${title}" – no ${ESTIMATED_HOURS_REMAINING_PROP} or ${ESTIMATED_HOURS_PROP} set`);
+        continue;
       }
       const dueDate = props['Due']?.date?.start
         ? new Date(props['Due'].date.start).toLocaleDateString('en-US', { 
