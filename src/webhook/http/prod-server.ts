@@ -5,6 +5,10 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 import '../../utils/logger';
 
+// Import after dotenv.config() so env vars exist (package may read config at import time)
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { createDispatchEventsRouter } = require('@theharuspex/notion-dispatch-events');
+
 import fs from 'fs';
 import path from 'path';
 import { createBaseApp } from './base-server';
@@ -15,6 +19,9 @@ import { getAssigneesForObjective } from '../../api/objective-fanout';
 import notion from '../../api/client';
 
 const app = createBaseApp();
+
+// Mount dispatch/events endpoints alongside NextUp webhook
+app.use(createDispatchEventsRouter());
 
 const scheduler = startScheduler({ debounceMs: DEBOUNCE_MS, enableLogging: true });
 const objectiveLastHandledAt = new Map<string, number>();
