@@ -42,14 +42,12 @@ npx ts-node src/cli/notion-nextup.ts --notion-db your-database-id
 npm run start:webhook
 ```
 
-### Deploying to EC2 (one-liner)
+### Deploying to EC2 (GitHub Actions)
 
-```bash
-./scripts/deploy-ec2.sh            # deploy origin/main
-./scripts/deploy-ec2.sh <commit>   # deploy specific commit / branch / tag
-```
+Deploys are handled by `.github/workflows/deploy.yml` on push to `main`.
 
-The helper SSHes to the instance, pulls, builds and restarts `pm2` (see the script header for configurable env vars).
+- Uses GitHub Packages for `@theharuspex/*` deps via `NODE_AUTH_TOKEN` (scoped to `npm ci` only, not persisted in PM2 env).
+- Health check validates `GET /healthz` (NextUp base server) and `GET /health` (dispatch/events router).
 
 ### Arguments (CLI Mode)
 

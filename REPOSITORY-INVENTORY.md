@@ -11,18 +11,10 @@ This repo powers Notion NextUp: a webhook + CLI system that ranks tasks per owne
 - tsconfig.json: TS build settings (src → dist).
 
 ### Docs
-- docs/guides/
-  - deployment-guide.md: CI/CD and manual steps (review to align with current inline SSH workflow and hours-only behavior).
-  - testing-guide.md: Largely legacy; tests are not in active use.
-  - comment-logger-overview.md: Historical; comment-logger now external.
-- docs/reports/
-  - 2025-10-24-status.md: Migration status and next steps.
-  - intraday-completion-report.md: Behavior notes.
-- ec2-instance-docs/: Host-level guides (nginx, PM2, directory layout). Still accurate for server topology; augment with GitHub Actions workflow.
+- No in-repo docs directory. Deployment and EC2 notes live in the workflow and external notes.
 
 ### CI/CD
 - .github/workflows/deploy.yml: On push to main, SSH to EC2, git reset --hard origin/main, npm ci, build, pm2 reload, local health check.
-- scripts/deploy.sh: Equivalent deploy steps; not used by workflow now, but useful manually.
 
 ### Scripts
 - scripts/estimated-hours/

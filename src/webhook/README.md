@@ -70,8 +70,9 @@ Notes:
 
 ## Endpoints
 
-- `POST /notion-webhook` → main webhook endpoint
-- `GET /healthz` → health check
+- `POST /notion-webhook` → main NextUp webhook endpoint
+- `GET /healthz` → NextUp base server health
+- `GET /health` → dispatch/events router health
 
 ## Notes
 
