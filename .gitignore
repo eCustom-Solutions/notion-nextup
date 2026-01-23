@@ -42,6 +42,9 @@ Thumbs.db
 logs
 *.log
 
+# Webhook captures
+captures/
+
 # Runtime data
 pids
 *.pid
