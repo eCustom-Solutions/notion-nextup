@@ -36,6 +36,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
+    "@theharuspex/notion-dispatch-events": "0.1.0",
     "@notionhq/client": "^4.0.1",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
