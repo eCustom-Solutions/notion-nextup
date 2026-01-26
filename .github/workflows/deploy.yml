@@ -42,7 +42,8 @@ jobs:
                 echo "::group::Deploy: diagnostics"
                 echo "::notice::pm2 status"; pm2 status || true
                 echo "::notice::pm2 describe"; pm2 describe notion-webhook || true
-                echo "::notice::pm2 logs (last 200)"; pm2 logs notion-webhook --lines 200 || true
+                echo "::notice::pm2 jlist (pid/pm_cwd/pm_uptime)"; pm2 jlist | node -e "const a=JSON.parse(require('\''fs'\'').readFileSync(0,'\''utf8'\'')); const p=a.find(x=>x.name==='\''notion-webhook'\''); console.log(p?{pid:p.pid,pm_cwd:p.pm2_env?.pm_cwd,pm_uptime:p.pm2_env?.pm_uptime,status:p.pm2_env?.status}:'\''not found'\'');" || true
+                echo "::notice::pm2 logs (last 200)"; pm2 logs notion-webhook --lines 200 --timestamp --nostream || true
                 echo "::notice::listening ports"; ss -lntp | grep 4401 || true
                 echo "::notice::curl /healthz"; curl -v http://127.0.0.1:4401/healthz || true
                 echo "::notice::curl /health"; curl -v http://127.0.0.1:4401/health || true
@@ -68,6 +69,9 @@ jobs:
               echo "::endgroup::"
               echo "::group::Deploy: build"
               npm run build &&
+              echo "::endgroup::"
+              echo "::group::Deploy: pm2 (flush logs)"
+              pm2 flush notion-webhook || true
               echo "::endgroup::"
               echo "::group::Deploy: pm2 (ensure cwd)"
               pm2_exists=true
@@ -97,7 +101,9 @@ jobs:
                 echo "health response: ${health_body}"
                 if echo "$healthz_body" | grep -qx ok && \
                    echo "$health_body" | grep -q "\"ok\":true"; then
-                  echo "health ok"; echo "::endgroup::"; exit 0; fi
+                  echo "health ok"; echo "::endgroup::"
+                  trap - ERR
+                  exit 0; fi
                 echo "health retry $i"; sleep 2;
               done;
               echo "health check failed"
