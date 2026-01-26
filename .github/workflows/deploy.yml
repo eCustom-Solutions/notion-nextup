@@ -22,9 +22,8 @@ jobs:
           script: |
             set -Eeuo pipefail
             sudo -u appuser bash -lc '
-              PS4='+\'' [$(date "+%Y-%m-%dT%H:%M:%S%z")] '\'''
-              set -x
-              trap '\''{
+              PS4="+ [\$(date \"+%Y-%m-%dT%H:%M:%S%z\")] "
+              diagnostics() {
                 echo "::error::Deploy failed. Running diagnostics..."
                 echo "::group::Deploy: diagnostics"
                 echo "::notice::pm2 status"; pm2 status || true
@@ -36,7 +35,9 @@ jobs:
                 echo "::notice::node/npm versions"; node -v || true; npm -v || true
                 echo "::notice::git sha"; git rev-parse HEAD || true
                 echo "::endgroup::"
-              }'\'' ERR
+              }
+              trap diagnostics ERR
+              set -x
               echo "::group::Deploy: git sync"
               cd /opt/myapp/notion-nextup &&
               git fetch origin &&
