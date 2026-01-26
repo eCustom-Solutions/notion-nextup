@@ -21,8 +21,22 @@ jobs:
           envs: NODE_AUTH_TOKEN
           script: |
             set -Eeuo pipefail
+            echo "::group::Deploy: token diagnostics (pre-sudo)"
+            if [ -n "${NODE_AUTH_TOKEN-}" ]; then
+              echo "::notice::(pre-sudo) NODE_AUTH_TOKEN present; len=${#NODE_AUTH_TOKEN}"
+            else
+              echo "::error::(pre-sudo) NODE_AUTH_TOKEN missing/blank"
+            fi
+            echo "::endgroup::"
             sudo -u appuser bash -lc '
               PS4="+ [\$(date \"+%Y-%m-%dT%H:%M:%S%z\")] "
+              echo "::group::Deploy: token diagnostics (inside sudo/appuser)"
+              if [ -n "${NODE_AUTH_TOKEN-}" ]; then
+                echo "::notice::(inside sudo) NODE_AUTH_TOKEN present; len=${#NODE_AUTH_TOKEN}"
+              else
+                echo "::error::(inside sudo) NODE_AUTH_TOKEN missing/blank"
+              fi
+              echo "::endgroup::"
               diagnostics() {
                 echo "::error::Deploy failed. Running diagnostics..."
                 echo "::group::Deploy: diagnostics"
