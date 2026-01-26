@@ -47,11 +47,33 @@ jobs:
               NODE_AUTH_TOKEN="$NODE_AUTH_TOKEN" npm ci --loglevel=info &&
               unset NODE_AUTH_TOKEN &&
               echo "::endgroup::"
+              echo "::group::Deploy: sanity (deps)"
+              cd /opt/myapp/notion-nextup
+              ls -la node_modules/dotenv || true
+              node -e "console.log('\''dotenv resolves to'\'', require.resolve('\''dotenv'\''))" || true
+              echo "::endgroup::"
               echo "::group::Deploy: build"
               npm run build &&
               echo "::endgroup::"
-              echo "::group::Deploy: pm2 reload"
-              pm2 reload notion-webhook --update-env &&
+              echo "::group::Deploy: pm2 (ensure cwd)"
+              pm2_exists=true
+              pm2 describe notion-webhook >/dev/null 2>&1 || pm2_exists=false
+              pm_cwd=""
+              if $pm2_exists; then
+                pm_cwd=$(pm2 describe notion-webhook 2>/dev/null | awk -F': ' '\''/^ *pm_cwd/ {print $2; exit}'\'')
+              fi
+              if [ "$pm2_exists" = "false" ]; then
+                echo "pm2 process missing; starting with explicit cwd"
+                pm2 delete notion-webhook >/dev/null 2>&1 || true
+                pm2 start dist/webhook/http/prod-server.js --name notion-webhook --cwd /opt/myapp/notion-nextup
+              elif [ "$pm_cwd" != "/opt/myapp/notion-nextup" ]; then
+                echo "pm2 cwd mismatch: ${pm_cwd:-<empty>} -> /opt/myapp/notion-nextup; recreating process"
+                pm2 delete notion-webhook >/dev/null 2>&1 || true
+                pm2 start dist/webhook/http/prod-server.js --name notion-webhook --cwd /opt/myapp/notion-nextup
+              else
+                echo "pm2 cwd ok: $pm_cwd; reloading"
+                pm2 reload notion-webhook --update-env
+              fi
               echo "::endgroup::"
               echo "::group::Deploy: health checks"
               for i in {1..15}; do
