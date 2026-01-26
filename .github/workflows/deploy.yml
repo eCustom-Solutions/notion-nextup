@@ -59,17 +59,17 @@ jobs:
               pm2_exists=true
               pm2 describe notion-webhook >/dev/null 2>&1 || pm2_exists=false
               pm_cwd=""
-              if $pm2_exists; then
-                pm_cwd=$(pm2 describe notion-webhook 2>/dev/null | awk -F': ' '\''/^ *pm_cwd/ {print $2; exit}'\'')
+              if [ "$pm2_exists" = "true" ]; then
+                pm_cwd=$(pm2 describe notion-webhook 2>/dev/null | sed -n "s/^ *pm_cwd[[:space:]]*:[[:space:]]*//p" | head -n 1)
               fi
               if [ "$pm2_exists" = "false" ]; then
                 echo "pm2 process missing; starting with explicit cwd"
                 pm2 delete notion-webhook >/dev/null 2>&1 || true
-                pm2 start dist/webhook/http/prod-server.js --name notion-webhook --cwd /opt/myapp/notion-nextup
+                pm2 start /opt/myapp/notion-nextup/dist/webhook/http/prod-server.js --name notion-webhook --cwd /opt/myapp/notion-nextup
               elif [ "$pm_cwd" != "/opt/myapp/notion-nextup" ]; then
                 echo "pm2 cwd mismatch: ${pm_cwd:-<empty>} -> /opt/myapp/notion-nextup; recreating process"
                 pm2 delete notion-webhook >/dev/null 2>&1 || true
-                pm2 start dist/webhook/http/prod-server.js --name notion-webhook --cwd /opt/myapp/notion-nextup
+                pm2 start /opt/myapp/notion-nextup/dist/webhook/http/prod-server.js --name notion-webhook --cwd /opt/myapp/notion-nextup
               else
                 echo "pm2 cwd ok: $pm_cwd; reloading"
                 pm2 reload notion-webhook --update-env
