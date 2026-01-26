@@ -28,7 +28,7 @@ jobs:
               echo "::error::(pre-sudo) NODE_AUTH_TOKEN missing/blank"
             fi
             echo "::endgroup::"
-            sudo -u appuser bash -lc '
+            sudo -u appuser env NODE_AUTH_TOKEN="$NODE_AUTH_TOKEN" bash -lc '
               PS4="+ [\$(date \"+%Y-%m-%dT%H:%M:%S%z\")] "
               echo "::group::Deploy: token diagnostics (inside sudo/appuser)"
               if [ -n "${NODE_AUTH_TOKEN-}" ]; then
