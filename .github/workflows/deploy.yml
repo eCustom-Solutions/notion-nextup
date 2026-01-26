@@ -22,20 +22,61 @@ jobs:
           script: |
             set -Eeuo pipefail
             sudo -u appuser bash -lc '
+              PS4='+\'' [$(date "+%Y-%m-%dT%H:%M:%S%z")] '\'''
+              set -x
+              trap '\''{
+                echo "::error::Deploy failed. Running diagnostics..."
+                echo "::group::Deploy: diagnostics"
+                echo "::notice::pm2 status"; pm2 status || true
+                echo "::notice::pm2 describe"; pm2 describe notion-webhook || true
+                echo "::notice::pm2 logs (last 200)"; pm2 logs notion-webhook --lines 200 || true
+                echo "::notice::listening ports"; ss -lntp | grep 4401 || true
+                echo "::notice::curl /healthz"; curl -v http://127.0.0.1:4401/healthz || true
+                echo "::notice::curl /health"; curl -v http://127.0.0.1:4401/health || true
+                echo "::notice::node/npm versions"; node -v || true; npm -v || true
+                echo "::notice::git sha"; git rev-parse HEAD || true
+                echo "::endgroup::"
+              }'\'' ERR
+              echo "::group::Deploy: git sync"
               cd /opt/myapp/notion-nextup &&
               git fetch origin &&
               git reset --hard origin/main &&
-              NODE_AUTH_TOKEN="$NODE_AUTH_TOKEN" npm ci --silent &&
+              echo "::endgroup::"
+              echo "::group::Deploy: npm ci"
+              NODE_AUTH_TOKEN="$NODE_AUTH_TOKEN" npm ci --loglevel=info &&
               unset NODE_AUTH_TOKEN &&
-              npm run --silent build &&
+              echo "::endgroup::"
+              echo "::group::Deploy: build"
+              npm run build &&
+              echo "::endgroup::"
+              echo "::group::Deploy: pm2 reload"
               pm2 reload notion-webhook --update-env &&
+              echo "::endgroup::"
+              echo "::group::Deploy: health checks"
               for i in {1..15}; do
-                if curl -sSf http://127.0.0.1:4401/healthz | grep -qx ok && \
-                   curl -sSf http://127.0.0.1:4401/health | grep -q "\"ok\":true"; then
-                  echo "health ok"; exit 0; fi
+                healthz_body=$(curl -sS http://127.0.0.1:4401/healthz || true)
+                health_body=$(curl -sS http://127.0.0.1:4401/health || true)
+                echo "healthz response: ${healthz_body}"
+                echo "health response: ${health_body}"
+                if echo "$healthz_body" | grep -qx ok && \
+                   echo "$health_body" | grep -q "\"ok\":true"; then
+                  echo "health ok"; echo "::endgroup::"; exit 0; fi
                 echo "health retry $i"; sleep 2;
               done;
-              echo "health check failed"; exit 1
+              echo "health check failed"
+              echo "::endgroup::"
+              echo "::error::Health checks failed. Running diagnostics..."
+              echo "::group::Deploy: diagnostics"
+              echo "::notice::pm2 status"; pm2 status || true
+              echo "::notice::pm2 describe"; pm2 describe notion-webhook || true
+              echo "::notice::pm2 logs (last 200)"; pm2 logs notion-webhook --lines 200 || true
+              echo "::notice::listening ports"; ss -lntp | grep 4401 || true
+              echo "::notice::curl /healthz"; curl -v http://127.0.0.1:4401/healthz || true
+              echo "::notice::curl /health"; curl -v http://127.0.0.1:4401/health || true
+              echo "::notice::node/npm versions"; node -v || true; npm -v || true
+              echo "::notice::git sha"; git rev-parse HEAD || true
+              echo "::endgroup::"
+              exit 1
             '
 
 
