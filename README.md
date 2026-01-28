@@ -49,6 +49,30 @@ Deploys are handled by `.github/workflows/deploy.yml` on push to `main`.
 - Uses GitHub Packages for `@theharuspex/*` deps via `NODE_AUTH_TOKEN` (scoped to `npm ci` only, not persisted in PM2 env).
 - Health check validates `GET /healthz` (NextUp base server) and `GET /health` (dispatch/events router).
 
+### Updating Internal Dependencies
+
+When `@theharuspex/notion-dispatch-events` is published, bump it manually:
+
+```bash
+# Export NODE_AUTH_TOKEN (required for GitHub Packages authentication)
+export NODE_AUTH_TOKEN=$(grep -E '^NODE_AUTH_TOKEN=' .env | head -1 | cut -d '=' -f2- | tr -d '"' | tr -d "'")
+
+# Bump to latest version
+npm run bump:dispatch-events
+
+# Bump to specific version
+npm run bump:dispatch-events -- 1.2.3
+
+# Commit and push (triggers deploy to EC2)
+git add package.json package-lock.json
+git commit -m "chore(deps): bump notion-dispatch-events to 1.2.3"
+git push origin main
+```
+
+**Note:** The `NODE_AUTH_TOKEN` environment variable must be set to authenticate with GitHub Packages. If you have it in your `.env` file, you can export it using the command above.
+
+Pushing to `main` automatically triggers deployment to EC2 via GitHub Actions.
+
 ### Arguments (CLI Mode)
 
 - `--notion-db`: Notion database ID (required)
