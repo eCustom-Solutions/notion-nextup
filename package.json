@@ -2,7 +2,14 @@
   "name": "notion-nextup",
   "version": "1.0.0",
   "description": "High-performance CLI tool for Notion task queue optimization with surgical updates, database-level filtering, and 85% performance improvement",
-  "keywords": ["notion", "task-queue", "productivity", "cli", "typescript", "optimization"],
+  "keywords": [
+    "notion",
+    "task-queue",
+    "productivity",
+    "cli",
+    "typescript",
+    "optimization"
+  ],
   "author": "theHaruspex",
   "license": "MIT",
   "repository": {
@@ -37,8 +44,8 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@theharuspex/notion-dispatch-events": "0.1.0",
     "@notionhq/client": "^4.0.1",
+    "@theharuspex/notion-dispatch-events": "^0.1.0",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "pino": "^9.4.0",
